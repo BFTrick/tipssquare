@@ -54,7 +54,8 @@ class Tipssquare {
 		);
 		$args = array(
 			'labels' => $labels,
-			'public' => true,
+			'public' => false,
+			'show_ui' => true, // UI in admin panel,
 			'publicly_queryable' => false,
 			'query_var' => false,
 			'rewrite' => false,
