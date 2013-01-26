@@ -24,6 +24,15 @@ elseif ( file_exists( dirname( __FILE__ ) . '/wp-config-local.php' ) ) {
     include( dirname( __FILE__ ) . '/wp-config-local.php' );  
 }
 
+
+/**
+ * WordPress Post Revisions, defaults to true.
+ *
+ * For this web app users don't need to save revisions.
+ */
+define('WP_POST_REVISIONS', 'false');
+
+
 /**
  * WordPress Localized Language, defaults to English.
  *
