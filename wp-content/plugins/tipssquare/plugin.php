@@ -23,6 +23,9 @@ class Tipssquare {
 		// create Foursquare venue custom post type 
 		$this->create_fsvenue_post_type();
 
+		// after this plugin is done loaded leave a hook for other plugins
+		do_action('tipssquare_loaded');
+
 	}
 
 
