@@ -32,6 +32,9 @@ class Tipssquare {
 		// after this plugin is done loaded leave a hook for other plugins
 		do_action('tipssquare_loaded');
 
+		// hide extra publishing settings
+		add_action('admin_head-post.php', 'fsvenue_hide_publishing_actions');
+		add_action('admin_head-post-new.php', 'fsvenue_hide_publishing_actions');
 	}
 
 
@@ -193,5 +196,23 @@ function fsvenue_custom_columns($column)
 			<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
 			<?php
 		break;
+	}
+}
+
+
+// hide the non essential publishing actions in the foursquare venue custom post type
+function fsvenue_hide_publishing_actions()
+{
+	$my_post_type = 'fsvenue';
+	global $post;
+	if($post->post_type == $my_post_type){
+		echo '
+		<style type="text/css">
+			#misc-publishing-actions, #minor-publishing-actions
+			{
+				display:none;
+			}
+		</style>
+		';
 	}
 }
