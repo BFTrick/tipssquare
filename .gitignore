@@ -12,3 +12,7 @@ wp-content/cache/
 wp-content/backups/
 sitemap.xml
 sitemap.xml.gz
+
+# specific themes & plugins
+wp-content/themes/twentyeleven
+wp-content/themes/twentytwelve
