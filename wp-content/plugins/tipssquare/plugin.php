@@ -23,6 +23,12 @@ class Tipssquare {
 		// create Foursquare venue custom post type 
 		$this->create_fsvenue_post_type();
 
+		// edit the fsvenue edit page column headers 
+		add_filter ("manage_edit-fsvenue_columns", "fsvenue_edit_columns");
+
+		// edit the fsvenue edit page column values
+		add_action ("manage_posts_custom_column", "fsvenue_custom_columns");
+
 		// after this plugin is done loaded leave a hook for other plugins
 		do_action('tipssquare_loaded');
 
@@ -158,4 +164,33 @@ function fsvenue_updated_messages( $messages ) {
 	);
 
 	return $messages;
+}
+
+
+// edit the columns for the foursquare venue custom post type
+function fsvenue_edit_columns($columns) 
+{
+	$columns = array(
+		"cb" => "<input type=\"checkbox\" />",
+		"title" => "Title",
+		"fsvenue_fsid" => "Foursquare ID",
+		);
+	return $columns;
+}
+
+
+// set values for the custom columns for the foursquare venue custom post type
+// we're only modifying the foursquare id field since WP already handes the checkbox & title
+function fsvenue_custom_columns($column)
+{
+	global $post;
+	$custom = get_post_custom();
+	switch ($column){
+		case "fsvenue_fsid":
+			$fsVenueId = $custom['_fsvenue_post_name'][0];
+			?>
+			<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
+			<?php
+		break;
+	}
 }
