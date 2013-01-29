@@ -52,7 +52,7 @@ class Tipssquare {
 		// initialize venuesToQuery
 		// for now we will programatically set these variables in the code
 		// at a future date this will be pulled from the DB
-		$this->venuesToQuery = array("40a55d80f964a52020f31ee3");
+		$this->venuesToQuery = array("4bb7946eb35776b039d0c701");
 
 		// query locations for tips
 		$this->fetch_tips();
@@ -106,7 +106,6 @@ class Tipssquare {
 	// This function fetches the tips for all venues
 	public function fetch_tips()
 	{
-
 		// if there are no venues then don't bother
 		if(empty($this->venuesToQuery))
 		{
@@ -137,30 +136,49 @@ class Tipssquare {
 			// save the tips out of the api response
 			$tips = $ApiResultString->response->tips->items;
 
+			// get existing tips
+			// right now we have a limit of 100,000 tips, after that this program will start creating duplicate tips
+			$existingTips = get_posts( array('posts_per_page' => 100000, 'post_type' => 'foursquare_tip') );  
+			
+			// put the existing tip ids into a convenient array for future use
+			$existingTipIds = array();
+			if(!empty($existingTips))
+			{
+				foreach ($existingTips as $key => $value)
+				{
+					$existingTipIds[] = $value->id;
+				}
+			}
+
 			// loop through each tip and add it to DB if it isn't already there
 			foreach ($tips as $tipKey => $tip)
 			{
-				// first check for an existing post
-				// TODO
-
+				// see if the tip already exists
+				$tipAlreadyExists = in_array($tip->id, $existingTipIds);
+				
 				// if no post exists add it to the DB!
-				$newPost = array(
-					'post_content'		=> $tip->text,
-					'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
-					'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
-					'post_title'		=> $tip->id,
-					'post_type'			=> 'foursquare_tip',
-				);
-				$post_id = wp_insert_post($newPost, true);
+				if(!$tipAlreadyExists)
+				{
+					$newPost = array(
+						'post_content'		=> $tip->text,
+						'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
+						'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
+						'post_status'		=> "publish",
+						'post_title'		=> $tip->id,
+						'post_type'			=> 'foursquare_tip',
+					);
+					$post_id = wp_insert_post($newPost, true);
 
-				// add the meta data
-				add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
-				add_post_meta($post_id, "photourl", $tip->photourl);
-				add_post_meta($post_id, "likes", $tip->likes);
-				add_post_meta($post_id, "id", $tip->id);
+					// add the meta data
+					add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
+					add_post_meta($post_id, "photourl", $tip->photourl);
+					add_post_meta($post_id, "likes", $tip->likes);
+					add_post_meta($post_id, "id", $tip->id);
 
-				// add a foursquare user to the database
-				// TODO
+					// add a foursquare user to the database
+					// TODO
+
+				}
 
 			}
 
