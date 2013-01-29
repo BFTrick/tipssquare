@@ -9,6 +9,19 @@ Author URI: http://www.patrickrauland.com
 */
 
 class Tipssquare {
+
+	// foursquare api variables
+	private $fsVenuesApiBaseUri = "https://api.foursquare.com/v2/venues";
+	private $fsTipsApiPage = "tips";
+	private $fsTipsSortDirection = "recent";
+
+	// foursquare app credentials
+	private $fsClientId = "UQ1ZQLV4AHI34LGUBXNXFALIS1AY0NYXPIJE1GUFMV1PVRQG";
+	private $fsClientSecret = "FW2FYYNFQZG1AQHFBOTIOUEQPEIDONVY5KZVUORK2QENKNC1";
+
+	// misc
+	private $venuesToQuery; // this variable tracks which venues need to be queried. For right now this variable will be initialized via code. In the future it will pull down data from the DB.
+
 	public function __construct() 
 	{
 		add_action( 'init', array( &$this, 'init' ) );
@@ -35,6 +48,14 @@ class Tipssquare {
 		// hide extra publishing settings
 		add_action('admin_head-post.php', 'fsvenue_hide_publishing_actions');
 		add_action('admin_head-post-new.php', 'fsvenue_hide_publishing_actions');
+
+		// initialize venuesToQuery
+		// for now we will programatically set these variables in the code
+		// at a future date this will be pulled from the DB
+		$this->venuesToQuery = array("40a55d80f964a52020f31ee3");
+
+		// query locations for tips
+		$this->fetch_tips();
 	}
 
 
@@ -79,6 +100,46 @@ class Tipssquare {
 
 		// create custom update messages for the foursquare venue custom post type
 		add_filter( 'post_updated_messages', 'fsvenue_updated_messages' );
+	}
+
+
+	// This function fetches the tips for all venues
+	public function fetch_tips()
+	{
+
+		// if there are no venues then don't bother
+		if(empty($this->venuesToQuery))
+		{
+			return false;
+		}
+
+		// loop through each venue and get it's tips
+		foreach ($this->venuesToQuery as $key => $venueId)
+		{
+			// assemble the url for the foursquare api call
+			// ex. https://api.foursquare.com/v2/venues/40a55d80f964a52020f31ee3/tips?sort=recent&v=yyyymmdd&client_id=aaaaabbbbbbcccc11113344kkd8did&client_secret=bbbbbcccccdddddeeeeeee858587guuguuuu999999
+			$apiUrl = $this->fsVenuesApiBaseUri . "/" . $venueId . "/" . $this->fsTipsApiPage . "?sort=" . $this->fsTipsSortDirection . "&v=" . date("Ymd") . "&client_id=" . $this->fsClientId . "&client_secret=" . $this->fsClientSecret;
+
+			// get the response from the foursquare API
+			$ApiResultString = file_get_contents($apiUrl);
+
+			// parse the response
+			$ApiResultString = json_decode($ApiResultString);
+			
+			// if we get a 200 response (OK) then proceed
+			if (($ApiResultString->meta->code != 200) || ($ApiResultString->response->tips->count < 1))
+			{
+				// print error
+				// TODO
+				return false;
+			}
+			
+			$tips = $ApiResultString->response->tips->items;
+
+			// store the tips
+			// TODO
+		}
+		
 	}
 
 }
