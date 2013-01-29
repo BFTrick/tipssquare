@@ -134,10 +134,36 @@ class Tipssquare {
 				return false;
 			}
 			
+			// save the tips out of the api response
 			$tips = $ApiResultString->response->tips->items;
 
-			// store the tips
-			// TODO
+			// loop through each tip and add it to DB if it isn't already there
+			foreach ($tips as $tipKey => $tip)
+			{
+				// first check for an existing post
+				// TODO
+
+				// if no post exists add it to the DB!
+				$newPost = array(
+					'post_content'		=> $tip->text,
+					'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
+					'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
+					'post_title'		=> $tip->id,
+					'post_type'			=> 'foursquare_tip',
+				);
+				$post_id = wp_insert_post($newPost, true);
+
+				// add the meta data
+				add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
+				add_post_meta($post_id, "photourl", $tip->photourl);
+				add_post_meta($post_id, "likes", $tip->likes);
+				add_post_meta($post_id, "id", $tip->id);
+
+				// add a foursquare user to the database
+				// TODO
+
+			}
+
 		}
 		
 	}
