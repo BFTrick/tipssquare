@@ -83,7 +83,18 @@ class Tipssquare {
 			'publicly_queryable' => false,
 			'query_var' => false,
 			'rewrite' => false,
-			'capability_type' => 'post',
+			'capability_type' => 'venue',
+			'capabilities' => array(
+				'publish_posts' => 'publish_venues',
+				'edit_posts' => 'edit_venues',
+				'edit_others_posts' => 'edit_others_venues',
+				'delete_posts' => 'delete_venues',
+				'delete_others_posts' => 'delete_others_venues',
+				'read_private_posts' => 'read_private_venues',
+				'edit_post' => 'edit_venue',
+				'delete_post' => 'delete_venue',
+				'read_post' => 'read_venue',
+			),
 			'hierarchical' => false,
 			'supports' => array(
 				'title'
@@ -320,4 +331,51 @@ function fsvenue_hide_publishing_actions()
 		</style>
 		';
 	}
+}
+
+
+// Add functionality for user permissions (capabilities) for the venue custom post type
+// http://justintadlock.com/archives/2010/07/10/meta-capabilities-for-custom-post-types
+add_filter( 'map_meta_cap', 'my_map_meta_cap', 10, 4 );
+
+function my_map_meta_cap( $caps, $cap, $user_id, $args ) {
+
+	/* If editing, deleting, or reading a movie, get the post and post type object. */
+	if ( 'edit_venue' == $cap || 'delete_venue' == $cap || 'read_venue' == $cap ) {
+		$post = get_post( $args[0] );
+		$post_type = get_post_type_object( $post->post_type );
+
+		/* Set an empty array for the caps. */
+		$caps = array();
+	}
+
+	/* If editing a venue, assign the required capability. */
+	if ( 'edit_venue' == $cap ) {
+		if ( $user_id == $post->post_author )
+			$caps[] = $post_type->cap->edit_posts;
+		else
+			$caps[] = $post_type->cap->edit_others_posts;
+	}
+
+	/* If deleting a venue, assign the required capability. */
+	elseif ( 'delete_venue' == $cap ) {
+		if ( $user_id == $post->post_author )
+			$caps[] = $post_type->cap->delete_posts;
+		else
+			$caps[] = $post_type->cap->delete_others_posts;
+	}
+
+	/* If reading a private venue, assign the required capability. */
+	elseif ( 'read_venue' == $cap ) {
+
+		if ( 'private' != $post->post_status )
+			$caps[] = 'read';
+		elseif ( $user_id == $post->post_author )
+			$caps[] = 'read';
+		else
+			$caps[] = $post_type->cap->read_private_posts;
+	}
+
+	/* Return the capabilities required by the user. */
+	return $caps;
 }
