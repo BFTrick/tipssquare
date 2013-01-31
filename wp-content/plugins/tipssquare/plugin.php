@@ -31,23 +31,18 @@ class Tipssquare {
 	// initialize plugin
 	public function init() 
 	{	
-		// TODO
-
 		// create venue custom post type 
 		$this->create_venue_post_type();
 
 		// edit the fsvenue edit page column headers 
-		add_filter ("manage_edit-fsvenue_columns", "fsvenue_edit_columns");
+		add_filter ("manage_edit-fsvenue_columns", array( &$this, 'fsvenue_edit_columns' ) );
 
 		// edit the fsvenue edit page column values
-		add_action ("manage_posts_custom_column", "fsvenue_custom_columns");
-
-		// after this plugin is done loaded leave a hook for other plugins
-		do_action('tipssquare_loaded');
+		add_action ("manage_posts_custom_column", array( &$this, 'fsvenue_custom_columns' ) );
 
 		// hide extra publishing settings
-		add_action('admin_head-post.php', 'fsvenue_hide_publishing_actions');
-		add_action('admin_head-post-new.php', 'fsvenue_hide_publishing_actions');
+		add_action('admin_head-post.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
+		add_action('admin_head-post-new.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
 
 		// initialize venuesToQuery
 		// for now we will programatically set these variables in the code
@@ -55,7 +50,14 @@ class Tipssquare {
 		$this->venuesToQuery = array("4bb7946eb35776b039d0c701");
 
 		// query locations for tips
+		// TODO - fire off this method in WP Cron instead of on every page load
 		$this->fetch_tips();
+
+		// Add functionality for user permissions (capabilities) for the venue custom post type
+		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
+
+		// after this plugin is done loaded leave a hook for other plugins
+		do_action('tipssquare_loaded');
 	}
 
 
@@ -100,17 +102,17 @@ class Tipssquare {
 				'title'
 			),
 			'menu_position' => 20,
-			'register_meta_box_cb' => 'add_fsvenue_post_type_metabox'
+			'register_meta_box_cb' => array( &$this, 'add_fsvenue_post_type_metabox' )
 		);
 
 		// register the foursquare venue custom post type
 		register_post_type( 'fsvenue', $args );
 
 		// save the foursquare venue custom fields in the custom metabox
-		add_action( 'save_post', 'fsvenue_post_save_meta', 1, 2 ); 
+		add_action( 'save_post', array( &$this, 'fsvenue_post_save_meta' ), 1, 2 ); 
 
 		// create custom update messages for the foursquare venue custom post type
-		add_filter( 'post_updated_messages', 'fsvenue_updated_messages' );
+		add_filter( 'post_updated_messages', array( &$this, 'fsvenue_updated_messages' ) );
 	}
 
 
@@ -197,200 +199,199 @@ class Tipssquare {
 		
 	}
 
+
+	// edit the columns for the foursquare venue custom post type
+	public function fsvenue_edit_columns($columns) 
+	{
+		$columns = array(
+			"cb" => "<input type=\"checkbox\" />",
+			"title" => "Title",
+			"fsvenue_fsid" => "Foursquare ID",
+			);
+		return $columns;
+	}
+
+
+	// set values for the custom columns for the foursquare venue custom post type
+	// we're only modifying the foursquare id field since WP already handes the checkbox & title
+	public function fsvenue_custom_columns($column)
+	{
+		global $post;
+		$custom = get_post_custom();
+		switch ($column){
+			case "fsvenue_fsid":
+				$fsVenueId = $custom['_fsvenue_post_name'][0];
+				?>
+				<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
+				<?php
+			break;
+		}
+	}
+
+
+	// hide the non essential publishing actions in the foursquare venue custom post type
+	public function fsvenue_hide_publishing_actions()
+	{
+		$my_post_type = 'fsvenue';
+		global $post;
+		if($post->post_type == $my_post_type){
+			echo '
+			<style type="text/css">
+				#misc-publishing-actions, #minor-publishing-actions
+				{
+					display:none;
+				}
+			</style>
+			';
+		}
+	}
+
+	
+	// add the meta box
+	public function add_fsvenue_post_type_metabox() 
+	{
+		add_meta_box( 'fsvenue_metabox', 'Venue ID', array( &$this, 'fsvenue_metabox' ), 'fsvenue', 'normal' );
+	}
+
+
+	// the content for the foursquare venue id metabox for the foursquare venue custom post type
+	public function fsvenue_metabox() 
+	{
+		global $post;
+		// Noncename needed to verify where the data originated
+		echo '<input type="hidden" name="fsvenue_post_noncename" id="fsvenue_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
+
+		// Get the data if its already been entered
+		$fsvenue_post_name = get_post_meta($post->ID, '_fsvenue_post_name', true);
+
+		// Echo out the field
+		?>
+		<div class="width_full p_box">
+			<p>
+				<label>ID<br>
+					<input type="text" name="fsvenue_post_name" class="widefat" value="<?php echo $fsvenue_post_name; ?>" placeholder="ex. 4bb7946eb35776b039d0c701">
+				</label>
+			</p>
+		</div>
+		<?php
+	}
+
+
+	// save the metabox data
+	public function fsvenue_post_save_meta( $post_id, $post ) 
+	{
+	    // verify this came from the our screen and with proper authorization,
+	    // because save_post can be triggered at other times
+	    if ( !wp_verify_nonce( $_POST['fsvenue_post_noncename'], plugin_basename(__FILE__) ) ) {
+	        return $post->ID;
+	    }
+	 
+	    // Is the user allowed to edit the post or page?
+	    if ( !current_user_can( 'edit_post', $post->ID )){
+	        return $post->ID;
+	    }
+	    // OK, we're authenticated: we need to find and save the data
+	    // We'll put it into an array to make it easier to loop though.
+	 
+	    $fsvenue_post_meta['_fsvenue_post_name'] = $_POST['fsvenue_post_name'];
+	 
+	    // Add values as custom fields
+	    // Cycle through the $fsvenue_post_meta array!
+	    foreach( $fsvenue_post_meta as $key => $value ) 
+	    {
+			$value = implode(',', (array)$value); // If $value is an array, make it a CSV (unlikely)
+			if( get_post_meta( $post->ID, $key, FALSE ) ) // If the custom field already has a value
+			{ 
+				update_post_meta($post->ID, $key, $value);
+			} 
+			else // If the custom field doesn't have a value 
+			{ 
+				add_post_meta( $post->ID, $key, $value );
+			}
+			if( !$value ) // Delete if blank
+			{ 
+				delete_post_meta( $post->ID, $key );
+			}
+	    }
+	}
+
+
+	// add filter to ensure the text "Venue", or "venue", is displayed when user updates a venue 
+	public function fsvenue_updated_messages( $messages ) {
+		global $post, $post_ID;
+
+		$messages['fsvenue'] = array(
+			0 => '', // Unused. Messages start at index 1.
+			1 => sprintf( __('Venue updated.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
+			6 => sprintf( __('Venue saved.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
+		);
+
+		return $messages;
+	}
+
+
+	// Add functionality for user permissions (capabilities) for the venue custom post type
+	// http://justintadlock.com/archives/2010/07/10/meta-capabilities-for-custom-post-types
+	public function my_map_meta_cap( $caps, $cap, $user_id, $args ) {
+
+		// If editing, deleting, or reading a movie, get the post and post type object. 
+		if ( 'edit_venue' == $cap || 'delete_venue' == $cap || 'read_venue' == $cap ) 
+		{
+			$post = get_post( $args[0] );
+			$post_type = get_post_type_object( $post->post_type );
+
+			// Set an empty array for the caps. */
+			$caps = array();
+		}
+
+		// If editing a venue, assign the required capability. 
+		if ( 'edit_venue' == $cap ) 
+		{
+			if ( $user_id == $post->post_author )
+			{
+				$caps[] = $post_type->cap->edit_posts;
+			}
+			else
+			{
+				$caps[] = $post_type->cap->edit_others_posts;
+			}
+		}
+		// If deleting a venue, assign the required capability. 
+		elseif ( 'delete_venue' == $cap ) 
+		{
+			if ( $user_id == $post->post_author )
+			{
+				$caps[] = $post_type->cap->delete_posts;
+			}
+			else
+			{
+				$caps[] = $post_type->cap->delete_others_posts;
+			}
+		}
+		// If reading a private venue, assign the required capability. */
+		elseif ( 'read_venue' == $cap ) 
+		{
+			if ( 'private' != $post->post_status )
+			{
+				$caps[] = 'read';
+			}
+			elseif ( $user_id == $post->post_author )
+			{
+				$caps[] = 'read';
+			}
+			else
+			{
+				$caps[] = $post_type->cap->read_private_posts;
+			}
+		}
+
+		// Return the capabilities required by the user. */
+		return $caps;
+	}
 }
 
 
 // initialize the plugin
 new Tipssquare();
 
-
-// add the meta box
-function add_fsvenue_post_type_metabox() 
-{ 
-	add_meta_box( 'fsvenue_metabox', 'Venue ID', 'fsvenue_metabox', 'fsvenue', 'normal' );
-}
-
-
-// the content for the foursquare venue id metabox for the foursquare venue custom post type
-function fsvenue_metabox() 
-{
-	global $post;
-	// Noncename needed to verify where the data originated
-	echo '<input type="hidden" name="fsvenue_post_noncename" id="fsvenue_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
-
-	// Get the data if its already been entered
-	$fsvenue_post_name = get_post_meta($post->ID, '_fsvenue_post_name', true);
-
-	// Echo out the field
-	?>
-	<div class="width_full p_box">
-		<p>
-			<label>ID<br>
-				<input type="text" name="fsvenue_post_name" class="widefat" value="<?php echo $fsvenue_post_name; ?>" placeholder="ex. 4bb7946eb35776b039d0c701">
-			</label>
-		</p>
-	</div>
-	<?php
-}
-
-
-// save the metabox data
-function fsvenue_post_save_meta( $post_id, $post ) 
-{
-    // verify this came from the our screen and with proper authorization,
-    // because save_post can be triggered at other times
-    if ( !wp_verify_nonce( $_POST['fsvenue_post_noncename'], plugin_basename(__FILE__) ) ) {
-        return $post->ID;
-    }
- 
-    // Is the user allowed to edit the post or page?
-    if ( !current_user_can( 'edit_post', $post->ID )){
-        return $post->ID;
-    }
-    // OK, we're authenticated: we need to find and save the data
-    // We'll put it into an array to make it easier to loop though.
- 
-    $fsvenue_post_meta['_fsvenue_post_name'] = $_POST['fsvenue_post_name'];
- 
-    // Add values as custom fields
-    // Cycle through the $fsvenue_post_meta array!
-    foreach( $fsvenue_post_meta as $key => $value ) 
-    {
-		$value = implode(',', (array)$value); // If $value is an array, make it a CSV (unlikely)
-		if( get_post_meta( $post->ID, $key, FALSE ) ) // If the custom field already has a value
-		{ 
-			update_post_meta($post->ID, $key, $value);
-		} 
-		else // If the custom field doesn't have a value 
-		{ 
-			add_post_meta( $post->ID, $key, $value );
-		}
-		if( !$value ) // Delete if blank
-		{ 
-			delete_post_meta( $post->ID, $key );
-		}
-    }
-}
-
-
-// add filter to ensure the text "Venue", or "venue", is displayed when user updates a venue 
-function fsvenue_updated_messages( $messages ) {
-	global $post, $post_ID;
-
-	$messages['fsvenue'] = array(
-		0 => '', // Unused. Messages start at index 1.
-		1 => sprintf( __('Venue updated.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
-		6 => sprintf( __('Venue saved.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
-	);
-
-	return $messages;
-}
-
-
-// edit the columns for the foursquare venue custom post type
-function fsvenue_edit_columns($columns) 
-{
-	$columns = array(
-		"cb" => "<input type=\"checkbox\" />",
-		"title" => "Title",
-		"fsvenue_fsid" => "Foursquare ID",
-		);
-	return $columns;
-}
-
-
-// set values for the custom columns for the foursquare venue custom post type
-// we're only modifying the foursquare id field since WP already handes the checkbox & title
-function fsvenue_custom_columns($column)
-{
-	global $post;
-	$custom = get_post_custom();
-	switch ($column){
-		case "fsvenue_fsid":
-			$fsVenueId = $custom['_fsvenue_post_name'][0];
-			?>
-			<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
-			<?php
-		break;
-	}
-}
-
-
-// hide the non essential publishing actions in the foursquare venue custom post type
-function fsvenue_hide_publishing_actions()
-{
-	$my_post_type = 'fsvenue';
-	global $post;
-	if($post->post_type == $my_post_type){
-		echo '
-		<style type="text/css">
-			#misc-publishing-actions, #minor-publishing-actions
-			{
-				display:none;
-			}
-		</style>
-		';
-	}
-}
-
-
-// Add functionality for user permissions (capabilities) for the venue custom post type
-// http://justintadlock.com/archives/2010/07/10/meta-capabilities-for-custom-post-types
-add_filter( 'map_meta_cap', 'my_map_meta_cap', 10, 4 );
-
-function my_map_meta_cap( $caps, $cap, $user_id, $args ) {
-
-	// If editing, deleting, or reading a movie, get the post and post type object. 
-	if ( 'edit_venue' == $cap || 'delete_venue' == $cap || 'read_venue' == $cap ) 
-	{
-		$post = get_post( $args[0] );
-		$post_type = get_post_type_object( $post->post_type );
-
-		// Set an empty array for the caps. */
-		$caps = array();
-	}
-
-	// If editing a venue, assign the required capability. 
-	if ( 'edit_venue' == $cap ) 
-	{
-		if ( $user_id == $post->post_author )
-		{
-			$caps[] = $post_type->cap->edit_posts;
-		}
-		else
-		{
-			$caps[] = $post_type->cap->edit_others_posts;
-		}
-	}
-	// If deleting a venue, assign the required capability. 
-	elseif ( 'delete_venue' == $cap ) 
-	{
-		if ( $user_id == $post->post_author )
-		{
-			$caps[] = $post_type->cap->delete_posts;
-		}
-		else
-		{
-			$caps[] = $post_type->cap->delete_others_posts;
-		}
-	}
-	// If reading a private venue, assign the required capability. */
-	elseif ( 'read_venue' == $cap ) 
-	{
-		if ( 'private' != $post->post_status )
-		{
-			$caps[] = 'read';
-		}
-		elseif ( $user_id == $post->post_author )
-		{
-			$caps[] = 'read';
-		}
-		else
-		{
-			$caps[] = $post_type->cap->read_private_posts;
-		}
-	}
-
-	// Return the capabilities required by the user. */
-	return $caps;
-}
+// that's all folks!
