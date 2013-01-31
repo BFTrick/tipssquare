@@ -33,8 +33,8 @@ class Tipssquare {
 	{	
 		// TODO
 
-		// create Foursquare venue custom post type 
-		$this->create_fsvenue_post_type();
+		// create venue custom post type 
+		$this->create_venue_post_type();
 
 		// edit the fsvenue edit page column headers 
 		add_filter ("manage_edit-fsvenue_columns", "fsvenue_edit_columns");
@@ -60,7 +60,7 @@ class Tipssquare {
 
 
 	// this functions creates a foursquare venue type
-	public function create_fsvenue_post_type() 
+	public function create_venue_post_type() 
 	{
 		$labels = array(
 			'name' => __( 'Venues' ),
