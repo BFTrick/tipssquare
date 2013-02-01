@@ -1,0 +1,3 @@
+[submodule "wp-content/plugins/only-manage-your-posts"]
+	path = wp-content/plugins/only-manage-your-posts
+	url = git@github.com:BFTrick/only-manage-your-posts.git
