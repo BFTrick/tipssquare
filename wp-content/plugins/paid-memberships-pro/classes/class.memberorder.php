@@ -119,7 +119,7 @@
 			return $this->Gateway;
 		}
 		
-		function getLastMemberOrder($user_id = NULL)
+		function getLastMemberOrder($user_id = NULL, $status = 'success')
 		{
 			global $current_user, $wpdb;
 			if(!$user_id)
@@ -128,7 +128,14 @@
 			if(!$user_id)
 				return false;
 				
-			$id = $wpdb->get_var("SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' ORDER BY timestamp DESC LIMIT 1");
+			//build query
+			$this->sqlQuery = "SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' ";
+			if(!empty($status))
+				$this->sqlQuery .= "AND status = '" . $wpdb->escape($status) . "' ";
+			$this->sqlQuery .= "ORDER BY timestamp DESC LIMIT 1";
+				
+			//get id
+			$id = $wpdb->get_var($this->sqlQuery);
 			
 			return $this->getMemberOrderByID($id);
 		}
@@ -179,7 +186,7 @@
 			global $wpdb;
 			
 			if(!empty($this->user))
-				return $this->invoice->user;
+				return $this->user;
 				
 			$gmt_offset = get_option('gmt_offset');
 			$this->user = $wpdb->get_row("SELECT *, UNIX_TIMESTAMP(user_registered) + " . ($gmt_offset * 3600) . "  as user_registered FROM $wpdb->users WHERE ID = '" . $this->user_id . "' LIMIT 1");				
@@ -196,7 +203,11 @@
 			//check if there is an entry in memberships_users first
 			if(!empty($this->user_id))
 			{
-				$this->membership_level = $wpdb->get_row("SELECT l.id, l.name, l.description, l.allow_signups, mu.*, UNIX_TIMESTAMP(mu.startdate) as startdate, UNIX_TIMESTAMP(mu.enddate) as enddate, l.name, l.description, l.allow_signups FROM $wpdb->pmpro_membership_levels l LEFT JOIN $wpdb->pmpro_memberships_users mu ON l.id = mu.membership_id WHERE l.id = '" . $this->membership_id . "' AND mu.user_id = '" . $this->user_id . "' LIMIT 1");			
+				$this->membership_level = $wpdb->get_row("SELECT l.id as level_id, l.name, l.description, l.allow_signups, l.expiration_number, l.expiration_period, mu.*, UNIX_TIMESTAMP(mu.startdate) as startdate, UNIX_TIMESTAMP(mu.enddate) as enddate, l.name, l.description, l.allow_signups FROM $wpdb->pmpro_membership_levels l LEFT JOIN $wpdb->pmpro_memberships_users mu ON l.id = mu.membership_id WHERE mu.status = 'active' AND l.id = '" . $this->membership_id . "' AND mu.user_id = '" . $this->user_id . "' LIMIT 1");
+				
+				//fix the membership level id
+				if(!empty($this->membership_level->level_id))
+					$this->membership_level->id = $this->membership_level->level_id;
 			}			
 			
 			//okay, do I have a discount code to check? (if there is no membership_level->membership_id value, that means there was no entry in memberships_users)
@@ -267,7 +278,7 @@
 			global $current_user, $wpdb;
 			
 			//get a random code to use for the public ID
-			if(!$this->code)
+			if(empty($this->code))
 				$this->code = $this->getRandomCode();
 			
 			//figure out how much we charged
@@ -283,18 +294,31 @@
 			$this->certificateamount = "";
 			
 			//these fix some warnings/notices
+			if(empty($this->billing))
+			{
+				$this->billing->name = $this->billing->street = $this->billing->city = $this->billing->state = $this->billing->zip = $this->billing->country = $this->billing->phone = "";
+			}
+			if(empty($this->user_id))
+				$this->user_id = "";
 			if(empty($this->paypal_token))
 				$this->paypal_token = "";
 			if(empty($this->couponamount))
 				$this->couponamount = "";
 			if(empty($this->payment_type))
 				$this->payment_type = "";
+			if(empty($this->payment_transaction_id))
+				$this->payment_transaction_id = "";
 			if(empty($this->subscription_transaction_id))
 				$this->subscription_transaction_id = "";
 			if(empty($this->affiliate_id))
 				$this->affiliate_id = "";
 			if(empty($this->affiliate_subid))
-				$this->affiliate_subid = "";
+				$this->affiliate_subid = "";			
+			
+			if(empty($this->gateway))
+				$this->gateway = pmpro_getOption("gateway");				
+			if(empty($this->gateway_environment))
+				$this->gateway_environment = pmpro_getOption("gateway_environment");
 			
 			//build query			
 			if(!empty($this->id))
@@ -369,8 +393,8 @@
 									   '" . substr($this->ExpirationDate, 0, 2) . "',
 									   '" . substr($this->ExpirationDate, 2, 4) . "',
 									   '" . $this->status . "',
-									   '" . pmpro_getOption("gateway") . "', 
-									   '" . pmpro_getOption("gateway_environment") . "', 
+									   '" . $this->gateway . "', 
+									   '" . $this->gateway_environment . "', 
 									   '" . $this->payment_transaction_id . "',
 									   '" . $this->subscription_transaction_id . "',
 									   now(),
@@ -378,7 +402,7 @@
 									   '" . $this->affiliate_subid . "'
 									   )";
 			}
-			
+						
 			do_action($before_action, $this);
 			if($wpdb->query($this->sqlQuery) !== false)
 			{

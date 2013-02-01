@@ -260,7 +260,7 @@
 			}	
 
 			//defaults for new levels
-			if($edit == -1)
+			if(empty($copy) && $edit == -1)
 			{			
 				$level->cycle_number = 1;
 				$level->cycle_period = "Month";
@@ -359,7 +359,7 @@
 						<br /><small>
 							The amount to be billed one cycle after the initial payment.
 							<?php if($gateway == "stripe") { ?>
-								<br /><strong <?php if(!empty($pmpro_stripe_error)) { ?>class="pmpro_red"<?php } ?>>Stripe integration currently only supports billing periods of "1 Month" or "1 Year".
+								<br /><strong <?php if(!empty($pmpro_stripe_error)) { ?>class="pmpro_red"<?php } ?>>Stripe integration currently only supports billing periods of "Month" or "Year".
 							<?php } ?>
 						</small>							
 					</td>
@@ -414,7 +414,7 @@
 				</tr>
 				
 				<tr class="expiration_info" <?php if(!pmpro_isLevelExpiring($level)) {?>style="display: none;"<?php } ?>>
-					<th scope="row" valign="top"><label for="billing_amount">Expire In:</label></th>
+					<th scope="row" valign="top"><label for="billing_amount">Expires In:</label></th>
 					<td>							
 						<input id="expiration_number" name="expiration_number" type="text" size="10" value="<?php echo str_replace("\"", "&quot;", stripslashes($level->expiration_number))?>" />
 						<select id="expiration_period" name="expiration_period">
@@ -427,7 +427,7 @@
 							}
 						  ?>
 						</select>
-						<br /><small>How long before the expiration expires. Not that any future payments will be canceled when the membership expires.</small>							
+						<br /><small>How long before the expiration expires. Note that any future payments will be canceled when the membership expires.</small>							
 					</td>
 				</tr> 								
 			</tbody>

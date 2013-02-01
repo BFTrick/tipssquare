@@ -12,7 +12,8 @@
 		require_once(dirname(__FILE__) . '/../../../../wp-load.php');
 	}
 	
-	require_once(dirname(__FILE__) . "/../includes/lib/Stripe/Stripe.php");
+	if(!class_exists("Stripe"))
+		require_once(dirname(__FILE__) . "/../includes/lib/Stripe/Stripe.php");
 			
 	Stripe::setApiKey(pmpro_getOption("stripe_secretkey"));
 			
@@ -194,7 +195,7 @@
 	{
 		global $wpdb;
 		
-		$customer_id = $event->data->object->id;
+		$customer_id = $event->data->object->customer;
 		
 		//look up the order
 		$user_id = $wpdb->get_var("SELECT user_id FROM $wpdb->pmpro_membership_orders WHERE subscription_transaction_id = '" . $customer_id . "' LIMIT 1");

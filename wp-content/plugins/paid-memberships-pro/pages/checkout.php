@@ -1,6 +1,9 @@
 <?php		
-	global $gateway, $pmpro_review, $skip_account_fields, $pmpro_paypal_token, $wpdb, $current_user, $pmpro_msg, $pmpro_msgt, $pmpro_requirebilling, $pmpro_level, $pmpro_levels, $tospage, $pmpro_currency_symbol, $pmpro_show_discount_code;
-	global $discount_code, $username, $password, $password2, $bfirstname, $blastname, $baddress1, $baddress2, $bcity, $bstate, $bzipcode, $bcountry, $bphone, $bemail, $bconfirmemail, $CardType, $AccountNumber, $ExpirationMonth,$ExpirationYear;		
+	global $gateway, $pmpro_review, $skip_account_fields, $pmpro_paypal_token, $wpdb, $current_user, $pmpro_msg, $pmpro_msgt, $pmpro_requirebilling, $pmpro_level, $pmpro_levels, $tospage, $pmpro_currency_symbol, $pmpro_show_discount_code, $pmpro_error_fields;
+	global $discount_code, $username, $password, $password2, $bfirstname, $blastname, $baddress1, $baddress2, $bcity, $bstate, $bzipcode, $bcountry, $bphone, $bemail, $bconfirmemail, $CardType, $AccountNumber, $ExpirationMonth,$ExpirationYear;	
+
+	//set to true via filter to have Stripe use the minimal billing fields
+	$pmpro_stripe_lite = apply_filters("pmpro_stripe_lite", false);	
 ?>
 
 <form class="pmpro_form" action="<?php if(!empty($_REQUEST['review'])) echo pmpro_url("checkout", "?level=" . $pmpro_level->id); ?>" method="post">
@@ -70,7 +73,7 @@
 			<td>
 				<div>
 					<label for="other_discount_code">Discount Code</label>
-					<input id="other_discount_code" name="other_discount_code" type="text" class="input" size="20" value="<?php echo esc_attr($discount_code)?>" /> 
+					<input id="other_discount_code" name="other_discount_code" type="text" class="input <?php echo pmpro_getClassForField("other_discount_code");?>" size="20" value="<?php echo esc_attr($discount_code)?>" /> 
 					<input type="button" name="other_discount_code_button" id="other_discount_code_button" value="Apply" />					
 				</div>				
 			</td>
@@ -116,10 +119,10 @@
 				jQuery('.pmpro_discount_code_msg').hide();
 				
 				//disable the apply button
-				jQuery('#other_discount_code_button').attr('disabled', 'disabled');
-								
+				jQuery('#other_discount_code_button').attr('disabled', 'disabled');				
+				
 				jQuery.ajax({
-					url: '<?php echo site_url()?>',type:'GET',timeout:2000,
+					url: '<?php echo home_url()?>',type:'GET',timeout:2000,
 					dataType: 'html',
 					data: "action=applydiscountcode&code=" + code + "&level=" + level_id + "&msgfield=pmpro_message",
 					error: function(xml){
@@ -161,7 +164,7 @@
 			<td>
 				<div>
 					<label for="username">Username</label>
-					<input id="username" name="username" type="text" class="input" size="30" value="<?php echo esc_attr($username)?>" /> 
+					<input id="username" name="username" type="text" class="input <?php echo pmpro_getClassForField("username");?>" size="30" value="<?php echo esc_attr($username)?>" /> 
 				</div>
 				
 				<?php
@@ -170,7 +173,7 @@
 				
 				<div>
 					<label for="password">Password</label>
-					<input id="password" name="password" type="password" class="input" size="30" value="<?php echo esc_attr($password)?>" /> 
+					<input id="password" name="password" type="password" class="input <?php echo pmpro_getClassForField("password");?>" size="30" value="<?php echo esc_attr($password)?>" /> 
 				</div>
 				<?php
 					$pmpro_checkout_confirm_password = apply_filters("pmpro_checkout_confirm_password", true);					
@@ -179,7 +182,7 @@
 					?>
 					<div>
 						<label for="password2">Confirm Password</label>
-						<input id="password2" name="password2" type="password" class="input" size="30" value="<?php echo esc_attr($password2)?>" /> 
+						<input id="password2" name="password2" type="password" class="input <?php echo pmpro_getClassForField("password2");?>" size="30" value="<?php echo esc_attr($password2)?>" /> 
 					</div>
 					<?php
 					}
@@ -197,7 +200,7 @@
 				
 				<div>
 					<label for="bemail">E-mail Address</label>
-					<input id="bemail" name="bemail" type="text" class="input" size="30" value="<?php echo esc_attr($bemail)?>" /> 
+					<input id="bemail" name="bemail" type="text" class="input <?php echo pmpro_getClassForField("bemail");?>" size="30" value="<?php echo esc_attr($bemail)?>" /> 
 				</div>
 				<?php
 					$pmpro_checkout_confirm_email = apply_filters("pmpro_checkout_confirm_email", true);					
@@ -206,7 +209,7 @@
 					?>
 					<div>
 						<label for="bconfirmemail">Confirm E-mail</label>
-						<input id="bconfirmemail" name="bconfirmemail" type="text" class="input" size="30" value="<?php echo esc_attr($bconfirmemail)?>" /> 
+						<input id="bconfirmemail" name="bconfirmemail" type="text" class="input <?php echo pmpro_getClassForField("bconfirmemail");?>" size="30" value="<?php echo esc_attr($bconfirmemail)?>" /> 
 
 					</div>	                        
 					<?php
@@ -225,7 +228,7 @@
 				
 				<div class="pmpro_hidden">
 					<label for="fullname">Full Name</label>
-					<input id="fullname" name="fullname" type="text" class="input" size="30" value="" /> <strong>LEAVE THIS BLANK</strong>
+					<input id="fullname" name="fullname" type="text" class="input <?php echo pmpro_getClassForField("fullname");?>" size="30" value="" /> <strong>LEAVE THIS BLANK</strong>
 				</div>				
 
 				<div class="pmpro_captcha">
@@ -300,7 +303,8 @@
 		</table>
 	<?php } ?>
 	
-	<table id="pmpro_billing_address_fields" class="pmpro_checkout top1em" width="100%" cellpadding="0" cellspacing="0" border="0" <?php if(!$pmpro_requirebilling || $gateway == "paypalexpress") { ?>style="display: none;"<?php } ?>>
+	<?php if(empty($pmpro_stripe_lite) || $gateway != "stripe") { ?>
+	<table id="pmpro_billing_address_fields" class="pmpro_checkout top1em" width="100%" cellpadding="0" cellspacing="0" border="0" <?php if(!$pmpro_requirebilling || $gateway == "paypalexpress" || $gateway == "paypalstandard") { ?>style="display: none;"<?php } ?>>
 	<thead>
 		<tr>
 			<th>Billing Address</th>
@@ -311,19 +315,19 @@
 			<td>
 				<div>
 					<label for="bfirstname">First Name</label>
-					<input id="bfirstname" name="bfirstname" type="text" class="input" size="30" value="<?php echo esc_attr($bfirstname)?>" /> 
+					<input id="bfirstname" name="bfirstname" type="text" class="input <?php echo pmpro_getClassForField("bfirstname");?>" size="30" value="<?php echo esc_attr($bfirstname)?>" /> 
 				</div>	
 				<div>
 					<label for="blastname">Last Name</label>
-					<input id="blastname" name="blastname" type="text" class="input" size="30" value="<?php echo esc_attr($blastname)?>" /> 
+					<input id="blastname" name="blastname" type="text" class="input <?php echo pmpro_getClassForField("blastname");?>" size="30" value="<?php echo esc_attr($blastname)?>" /> 
 				</div>					
 				<div>
 					<label for="baddress1">Address 1</label>
-					<input id="baddress1" name="baddress1" type="text" class="input" size="30" value="<?php echo esc_attr($baddress1)?>" /> 
+					<input id="baddress1" name="baddress1" type="text" class="input <?php echo pmpro_getClassForField("baddress1");?>" size="30" value="<?php echo esc_attr($baddress1)?>" /> 
 				</div>
 				<div>
 					<label for="baddress2">Address 2</label>
-					<input id="baddress2" name="baddress2" type="text" class="input" size="30" value="<?php echo esc_attr($baddress2)?>" /> <small class="lite">(optional)</small>
+					<input id="baddress2" name="baddress2" type="text" class="input <?php echo pmpro_getClassForField("baddress2");?>" size="30" value="<?php echo esc_attr($baddress2)?>" />
 				</div>
 				
 				<?php
@@ -333,15 +337,15 @@
 				?>
 					<div>
 						<label for="bcity">City</label>
-						<input id="bcity" name="bcity" type="text" class="input" size="30" value="<?php echo esc_attr($bcity)?>" /> 
+						<input id="bcity" name="bcity" type="text" class="input <?php echo pmpro_getClassForField("bcity");?>" size="30" value="<?php echo esc_attr($bcity)?>" /> 
 					</div>
 					<div>
 						<label for="bstate">State</label>																
-						<input id="bstate" name="bstate" type="text" class="input" size="30" value="<?php echo esc_attr($bstate)?>" /> 					
+						<input id="bstate" name="bstate" type="text" class="input <?php echo pmpro_getClassForField("bcity");?>" size="30" value="<?php echo esc_attr($bstate)?>" /> 					
 					</div>
 					<div>
 						<label for="bzipcode">Zip/Postal Code</label>
-						<input id="bzipcode" name="bzipcode" type="text" class="input" size="30" value="<?php echo esc_attr($bzipcode)?>" /> 
+						<input id="bzipcode" name="bzipcode" type="text" class="input <?php echo pmpro_getClassForField("bzipcode");?>" size="30" value="<?php echo esc_attr($bzipcode)?>" /> 
 					</div>					
 				<?php
 					}
@@ -350,14 +354,14 @@
 					?>
 					<div>
 						<label for="bcity_state_zip">City, State Zip</label>
-						<input id="bcity" name="bcity" type="text" class="input" size="14" value="<?php echo esc_attr($bcity)?>" />, 
+						<input id="bcity" name="bcity" type="text" class="input <?php echo pmpro_getClassForField("bcity");?>" size="14" value="<?php echo esc_attr($bcity)?>" />, 
 						<?php
 							$state_dropdowns = apply_filters("pmpro_state_dropdowns", false);							
 							if($state_dropdowns === true || $state_dropdowns == "names")
 							{
 								global $pmpro_states;
 							?>
-							<select name="bstate">
+							<select name="bstate" class=" <?php echo pmpro_getClassForField("bstate");?>">
 								<option value="">--</option>
 								<?php 									
 									foreach($pmpro_states as $ab => $st) 
@@ -372,7 +376,7 @@
 							{
 								global $pmpro_states_abbreviations;
 							?>
-								<select name="bstate">
+								<select name="bstate" class=" <?php echo pmpro_getClassForField("bstate");?>">
 									<option value="">--</option>
 									<?php 									
 										foreach($pmpro_states_abbreviations as $ab) 
@@ -386,11 +390,11 @@
 							else
 							{
 							?>	
-							<input id="bstate" name="bstate" type="text" class="input" size="2" value="<?php echo esc_attr($bstate)?>" /> 
+							<input id="bstate" name="bstate" type="text" class="input <?php echo pmpro_getClassForField("bstate");?>" size="2" value="<?php echo esc_attr($bstate)?>" /> 
 							<?php
 							}
 						?>
-						<input id="bzipcode" name="bzipcode" type="text" class="input" size="5" value="<?php echo esc_attr($bzipcode)?>" /> 
+						<input id="bzipcode" name="bzipcode" type="text" class="input <?php echo pmpro_getClassForField("bzipcode");?>" size="5" value="<?php echo esc_attr($bzipcode)?>" /> 
 					</div>
 					<?php
 					}
@@ -403,7 +407,7 @@
 				?>
 				<div>
 					<label for="bcountry">Country</label>
-					<select name="bcountry">
+					<select name="bcountry" class=" <?php echo pmpro_getClassForField("bcountry");?>">
 						<?php
 							global $pmpro_countries, $pmpro_default_country;
 							foreach($pmpro_countries as $abbr => $country)
@@ -428,7 +432,7 @@
 				?>
 				<div>
 					<label for="bphone">Phone</label>
-					<input id="bphone" name="bphone" type="text" class="input" size="30" value="<?php echo esc_attr($bphone)?>" /> 
+					<input id="bphone" name="bphone" type="text" class="input <?php echo pmpro_getClassForField("bphone");?>" size="30" value="<?php echo esc_attr($bphone)?>" /> 
 					<?php echo formatPhone($bphone); ?>
 				</div>		
 				<?php if($skip_account_fields) { ?>
@@ -443,7 +447,7 @@
 				?>
 				<div>
 					<label for="bemail">E-mail Address</label>
-					<input id="bemail" name="bemail" type="text" class="input" size="30" value="<?php echo esc_attr($bemail)?>" /> 
+					<input id="bemail" name="bemail" type="text" class="input <?php echo pmpro_getClassForField("bemail");?>" size="30" value="<?php echo esc_attr($bemail)?>" /> 
 				</div>
 				<?php
 					$pmpro_checkout_confirm_email = apply_filters("pmpro_checkout_confirm_email", true);					
@@ -452,7 +456,7 @@
 					?>
 					<div>
 						<label for="bconfirmemail">Confirm E-mail</label>
-						<input id="bconfirmemail" name="bconfirmemail" type="text" class="input" size="30" value="<?php echo esc_attr($bconfirmemail)?>" /> 
+						<input id="bconfirmemail" name="bconfirmemail" type="text" class="input <?php echo pmpro_getClassForField("bconfirmemail");?>" size="30" value="<?php echo esc_attr($bconfirmemail)?>" /> 
 
 					</div>	                        
 					<?php
@@ -469,6 +473,7 @@
 		</tr>											
 	</tbody>
 	</table>                   
+	<?php } ?>
 	
 	<?php do_action("pmpro_checkout_after_billing_fields"); ?>		
 	
@@ -491,10 +496,10 @@
 		}
 	?>
 	
-	<table id="pmpro_payment_information_fields" class="pmpro_checkout top1em" width="100%" cellpadding="0" cellspacing="0" border="0" <?php if(!$pmpro_requirebilling || $gateway == "paypalexpress") { ?>style="display: none;"<?php } ?>>
+	<table id="pmpro_payment_information_fields" class="pmpro_checkout top1em" width="100%" cellpadding="0" cellspacing="0" border="0" <?php if(!$pmpro_requirebilling || $gateway == "paypalexpress" || $gateway == "paypalstandard") { ?>style="display: none;"<?php } ?>>
 	<thead>
 		<tr>
-			<th colspan="2"><span class="pmpro_thead-msg">We Accept <?php echo $pmpro_accepted_credit_cards_string?></span>Payment Information</th>
+			<th><span class="pmpro_thead-msg">We Accept <?php echo $pmpro_accepted_credit_cards_string?></span>Payment Information</th>
 		</tr>
 	</thead>
 	<tbody>                    
@@ -509,23 +514,25 @@
 					<?php
 					}
 				?>
+				<?php if(empty($pmpro_stripe_lite) || $gateway != "stripe") { ?>
 				<div>
 					<label for="CardType">Card Type</label>
-					<select id="CardType" <?php if($gateway != "stripe") { ?>name="CardType"<?php } ?>>
+					<select id="CardType" <?php if($gateway != "stripe") { ?>name="CardType"<?php } ?> class=" <?php echo pmpro_getClassForField("CardType");?>">
 						<?php foreach($pmpro_accepted_credit_cards as $cc) { ?>
 							<option value="<?php echo $cc?>" <?php if($CardType == $cc) { ?>selected="selected"<?php } ?>><?php echo $cc?></option>
 						<?php } ?>												
 					</select> 
 				</div>
+				<?php } ?>
 			
 				<div>
 					<label for="AccountNumber">Card Number</label>
-					<input id="AccountNumber" <?php if($gateway != "stripe") { ?>name="AccountNumber"<?php } ?> class="input" type="text" size="25" value="<?php echo esc_attr($AccountNumber)?>" /> 
+					<input id="AccountNumber" <?php if($gateway != "stripe") { ?>name="AccountNumber"<?php } ?> class="input <?php echo pmpro_getClassForField("AccountNumber");?>" type="text" size="25" value="<?php echo esc_attr($AccountNumber)?>" /> 
 				</div>
 			
 				<div>
 					<label for="ExpirationMonth">Expiration Date</label>
-					<select id="ExpirationMonth" <?php if($gateway != "stripe") { ?>name="ExpirationMonth"<?php } ?>>
+					<select id="ExpirationMonth" <?php if($gateway != "stripe") { ?>name="ExpirationMonth"<?php } ?> class=" <?php echo pmpro_getClassForField("ExpirationMonth");?>">
 						<option value="01" <?php if($ExpirationMonth == "01") { ?>selected="selected"<?php } ?>>01</option>
 						<option value="02" <?php if($ExpirationMonth == "02") { ?>selected="selected"<?php } ?>>02</option>
 						<option value="03" <?php if($ExpirationMonth == "03") { ?>selected="selected"<?php } ?>>03</option>
@@ -538,7 +545,7 @@
 						<option value="10" <?php if($ExpirationMonth == "10") { ?>selected="selected"<?php } ?>>10</option>
 						<option value="11" <?php if($ExpirationMonth == "11") { ?>selected="selected"<?php } ?>>11</option>
 						<option value="12" <?php if($ExpirationMonth == "12") { ?>selected="selected"<?php } ?>>12</option>
-					</select>/<select id="ExpirationYear" <?php if($gateway != "stripe") { ?>name="ExpirationYear"<?php } ?>>
+					</select>/<select id="ExpirationYear" <?php if($gateway != "stripe") { ?>name="ExpirationYear"<?php } ?> class=" <?php echo pmpro_getClassForField("ExpirationYear");?>">
 						<?php
 							for($i = date("Y"); $i < date("Y") + 10; $i++)
 							{
@@ -557,7 +564,7 @@
 				?>
 				<div>
 					<label for="CVV">CVV</label>
-					<input class="input" id="CVV" <?php if($gateway != "stripe") { ?>name="CVV"<?php } ?> type="text" size="4" value="<?php if(!empty($_REQUEST['CVV'])) { echo esc_attr($_REQUEST['CVV']); }?>" />  <small>(<a href="javascript:void(0);" onclick="javascript:window.open('<?php echo pmpro_https_filter(PMPRO_URL)?>/pages/popup-cvv.html','cvv','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=600, height=475');">what's this?</a>)</small>
+					<input class="input" id="CVV" <?php if($gateway != "stripe") { ?>name="CVV"<?php } ?> type="text" size="4" value="<?php if(!empty($_REQUEST['CVV'])) { echo esc_attr($_REQUEST['CVV']); }?>" class=" <?php echo pmpro_getClassForField("CVV");?>" />  <small>(<a href="javascript:void(0);" onclick="javascript:window.open('<?php echo pmpro_https_filter(PMPRO_URL)?>/pages/popup-cvv.html','cvv','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=600, height=475');">what's this?</a>)</small>
 				</div>
 				<?php
 					}
@@ -566,7 +573,7 @@
 				<?php if($pmpro_show_discount_code) { ?>
 				<div>
 					<label for="discount_code">Discount Code</label>
-					<input class="input" id="discount_code" name="discount_code" type="text" size="20" value="<?php echo esc_attr($discount_code)?>" />
+					<input class="input <?php echo pmpro_getClassForField("discount_code");?>" id="discount_code" name="discount_code" type="text" size="20" value="<?php echo esc_attr($discount_code)?>" />
 					<input type="button" id="discount_code_button" name="discount_code_button" value="Apply" />
 					<p id="discount_code_message" class="pmpro_message" style="display: none;"></p>
 				</div>
@@ -591,7 +598,7 @@
 				jQuery('#discount_code_button').attr('disabled', 'disabled');
 				
 				jQuery.ajax({
-					url: '<?php echo site_url()?>',type:'GET',timeout:2000,
+					url: '<?php echo home_url()?>',type:'GET',timeout:2000,
 					dataType: 'html',
 					data: "action=applydiscountcode&code=" + code + "&level=" + level_id + "&msgfield=discount_code_message",
 					error: function(xml){
@@ -618,8 +625,16 @@
 		});
 	</script>
 	
-	<?php do_action("pmpro_checkout_before_submit_button"); ?>			
+	<?php
+		if($gateway == "check")
+		{
+			$instructions = pmpro_getOption("instructions");			
+			echo '<div class="pmpro_check_instructions">' . wpautop($instructions) . '</div>';
+		}
+	?>
 	
+	<?php do_action("pmpro_checkout_before_submit_button"); ?>			
+		
 	<div class="pmpro_submit">
 		<?php if($pmpro_review) { ?>
 			
@@ -632,14 +647,14 @@
 				
 		<?php } else { ?>
 					
-			<?php if($gateway == "paypal" || $gateway == "paypalexpress") { ?>
-			<span id="pmpro_paypalexpress_checkout" <?php if($gateway != "paypalexpress" || !$pmpro_requirebilling) { ?>style="display: none;"<?php } ?>>
+			<?php if($gateway == "paypal" || $gateway == "paypalexpress" || $gateway == "paypalstandard") { ?>
+			<span id="pmpro_paypalexpress_checkout" <?php if(($gateway != "paypalexpress" && $gateway != "paypalstandard") || !$pmpro_requirebilling) { ?>style="display: none;"<?php } ?>>
 				<input type="hidden" name="submit-checkout" value="1" />		
 				<input type="image" value="Checkout with PayPal &raquo;" src="https://www.paypal.com/en_US/i/btn/btn_xpressCheckout.gif" />
 			</span>
 			<?php } ?>
 			
-			<span id="pmpro_submit_span" <?php if($gateway == "paypalexpress" && $pmpro_requirebilling) { ?>style="display: none;"<?php } ?>>
+			<span id="pmpro_submit_span" <?php if(($gateway == "paypalexpress" || $gateway == "paypalstandard") && $pmpro_requirebilling) { ?>style="display: none;"<?php } ?>>
 				<input type="hidden" name="submit-checkout" value="1" />		
 				<input type="submit" class="pmpro_btn pmpro_btn-submit-checkout" value="Submit and <?php if($pmpro_requirebilling) { ?>Checkout<?php } else { ?>Confirm<?php } ?> &raquo;" />				
 			</span>
@@ -689,5 +704,13 @@
 		jQuery('input[type=submit]', this).attr('disabled', 'disabled');
 		jQuery('input[type=image]', this).attr('disabled', 'disabled');
 		jQuery('#pmpro_processing_message').css('visibility', 'visible');
+	});
+	
+	//add required to required fields
+	jQuery('.pmpro_required').after('<span class="pmpro_asterisk"> *</span>');
+	
+	//unhighlight error fields when the user edits them
+	jQuery('.pmpro_error').bind("change keyup input", function() {
+		jQuery(this).removeClass('pmpro_error');
 	});
 </script>

@@ -28,7 +28,7 @@
 	
 	//from: http://stackoverflow.com/questions/5266945/wordpress-how-detect-if-current-page-is-the-login-page/5892694#5892694
 	function pmpro_is_login_page() {
-		return in_array($GLOBALS['pagenow'], array('wp-login.php', 'wp-register.php'));
+		return (in_array($GLOBALS['pagenow'], array('wp-login.php', 'wp-register.php')) || is_page("login"));
 	}
 	
 	//thanks: http://wordpress.org/support/topic/is_plugin_active
@@ -392,113 +392,71 @@
 	{
 		global $current_user, $all_membership_levels, $wpdb;
 		
-		$r = false;
-		$non_member_check = false;
+		$return = false;
 		
-		if($user_id)
+		if(empty($user_id)) //no user_id passed, check the current user
 		{
-			//get the membership level from the global array
-			$membership_level = $all_membership_levels[$user_id];
-			if(!$membership_level)
-			{
-				//no level, check the db and add to array
-				$membership_level = $wpdb->get_row("SELECT l.id AS ID, l.*
-													FROM {$wpdb->pmpro_membership_levels} AS l
-													JOIN {$wpdb->pmpro_memberships_users} AS mu ON (l.id = mu.membership_id)
-													WHERE mu.user_id = $user_id
-													LIMIT 1");
-				if($membership_level)
-					$all_membership_levels[$user_id] = $membership_level;
-				else
-					$all_memberships_levels[$user_id] = -1;	//not a member of anything
-			}
-		}
-		else
-		{
-			//no user_id passed, check the current user
 			$user_id = $current_user->ID;
-			$membership_level = $current_user->membership_level;
-		}								
-		
-		//if 0 was passed, return true if they have no level and false if they have any				
-		if(is_array($levels))
-		{			
-			if($levels[0] === "0" || $levels[0] === 0)
-			{
-				$non_member_check = true;
-				if(!empty($membership_level->ID))
-					$r = false;
-				else
-					$r = true;
-			}
+			$membership_levels = $current_user->membership_levels;
+		}
+		else //get membership levels for given user
+		{
+			$membership_levels = pmpro_getMembershipLevelsForUser($user_id);
+		}
+				
+		if($levels === "0" || $levels === 0) //if 0 was passed, return true if they have no level and false if they have any
+		{
+			$return = empty($membership_levels);
+		}
+		elseif(empty($levels)) //if no level var was passed, we're just checking if they have any level
+		{
+			$return = !empty($membership_levels);
 		}
 		else
 		{
-			if($levels === "0" || $levels === 0)
-			{				
-				$non_member_check = true;
-				if(!empty($membership_level->ID))
-					$r = false;
-				else
-					$r = true;
-			}
-		}		
-				
-		if(!$non_member_check)
-		{
-			//no levels?
-			if($membership_level == "-1" || empty($membership_level))
-				$r = false;		
-						
-			//if no level var was passed, we're just checking if they have any level
-			if(!$levels)
+			if(!is_array($levels)) //make an array out of a single element so we can use the same code
 			{
-				if(!empty($membership_level->ID))
-					$r = true;
-				else
-					$r = false;
-			}		
-								
-			if(!is_array($levels))
 				$levels = array($levels);
+			}
 			
-			//okay, so something to check let's set the levels
-			if(empty($membership_level))
+			if(empty($membership_levels))
 			{
-				//non member check
-				foreach($levels as $level)
-				{
-					if(is_numeric($level) && (int)$level < 0)
-						$r = true;	//they don't have a membership level so they don't have this one
-				}
+				//user has no levels just check if 0 was sent in one of the levels
+				if(in_array(0, $levels) || in_array("0", $levels))
+					$return = true;					
 			}
 			else
-			{						
-				//check levels against the user's level
+			{
 				foreach($levels as $level)
-				{
-					if(is_numeric($level) && (int)$level < 0)
-					{
-						//passing -1 will return true if the user does not have membership level #1
-						$abs_level = abs($level);						
-						if($abs_level != $membership_level->ID)
-							$r = true;
+				{				
+					$level_obj = pmpro_getLevel(is_numeric($level) ? abs(intval($level)) : $level); //make sure our level is in a proper format
+					if(empty($level_obj)){continue;} //invalid level
+					$found_level = false;
+					foreach($membership_levels as $membership_level)
+					{					
+						if($membership_level->id == $level_obj->id) //found a match
+						{
+							$found_level = true;
+						}
 					}
-					elseif($level == $membership_level->ID || $level == $membership_level->name)
-					{				
-						//the user has this level
-						$r = true;
+					
+					if(is_numeric($level) and intval($level) < 0 and !$found_level) //checking for the absence of this level
+					{
+						$return = true;
+					}
+					else if($found_level) //checking for the presence of this level
+					{
+						$return = true;
 					}
 				}
 			}
 		}
 		
-		$r = apply_filters("pmpro_has_membership_level", $r, $user_id, $levels);		
-		
-		return $r;
+		$return = apply_filters("pmpro_has_membership_level", $return, $user_id, $levels);
+		return $return;
 	}
 	
-	/* pmpro_changeMembershipLevel() creatues or updates the membership level of the given user to the given level.
+	/* pmpro_changeMembershipLevel() creates or updates the membership level of the given user to the given level.
 	 *
 	 * $level may either be the ID or name of the desired membership_level.
 	 * If $user_id is omitted, the value will be retrieved from $current_user.
@@ -508,86 +466,129 @@
 	 *		Failure returns boolean false.
 	 */
 	function pmpro_changeMembershipLevel($level, $user_id = NULL)
-	{								
+	{
 		global $wpdb;
 		global $current_user, $pmpro_error;
 
-		if(!$user_id)
+		if(empty($user_id))
+		{
 			$user_id = $current_user->ID;
-			
-		if(!$user_id)
+		}
+
+		if(empty($user_id))
 		{
 			$pmpro_error = "User ID not found.";
 			return false;
 		}
-					
-		//was a name passed? (Todo: make sure level names have at least one non-numeric character.		
-		if($level !== "" && $level !== false && $level !== NULL && !is_numeric($level))
+
+		if(empty($level)) //cancelling membership
 		{
-			$level = $wpdb->get_var("SELECT id FROM $wpdb->pmpro_membership_levels WHERE name = '" . $wpdb->escape($level) . "' LIMIT 1");			
-			if(!$level)	
+			$level = 0;
+		}
+		else if(is_array($level))
+		{
+			//custom level
+		}
+		else
+		{
+			$level_obj = pmpro_getLevel($level);
+			if(empty($level_obj))
 			{
-				$pmpro_error = "Membership level not found.";
+				$pmpro_error = "Invalid level.";
 				return false;
 			}
+			$level = $level_obj->id;
 		}
-				
-		//are they even changing?
-		$old_level = $wpdb->get_row("SELECT * FROM  $wpdb->pmpro_memberships_users WHERE user_id = '" . $user_id . "'");
-		if(empty($old_level->membership_id) && empty($level))
-			return false;	//not changing
-		elseif(!empty($old_level->membership_id) && $old_level->membership_id == $level)
-			return false;	//not changing
 		
-		//are they paying? may need to cancel their old membership				
-		if(!pmpro_isLevelFree($old_level))
-			$paying = true;
-		else
-			$paying = false;
-			
-		if($paying)
-		{					
-			//get last order
-			$order = new MemberOrder();
-			$order->getLastMemberOrder($user_id);						
-						
-			if($order->cancel())
+
+		//if it's a custom level, they're changing
+		if(!is_array($level))
+		{
+			//are they even changing?
+			if(pmpro_hasMembershipLevel($level, $user_id)) {
+				$pmpro_error = "not is changing?";
+				return false; //not changing
+			}
+		}
+
+		$old_levels = pmpro_getMembershipLevelsForUser($user_id);
+
+		$pmpro_cancel_previous_subscriptions = apply_filters("pmpro_cancel_previous_subscriptions", true);
+		if($pmpro_cancel_previous_subscriptions)
+		{
+			//deactivate old memberships (updates pmpro_memberships_users table)
+			if(!empty($old_levels))
 			{
-				//we're good					
+				foreach($old_levels as $old_level) {
+					$sql = "UPDATE $wpdb->pmpro_memberships_users SET `status`='inactive', `enddate`=NOW() WHERE `id`=".$old_level->subscription_id;
+					if(!$wpdb->query($sql))
+					{
+						$pmpro_error = "Error interacting with database: ".(mysql_errno()?mysql_error():'unavailable');
+						return false;
+					}
+				}
+			}
+
+			//cancel any other subscriptions they have (updates pmpro_membership_orders table)
+			$other_order_ids = $wpdb->get_col("SELECT id FROM $wpdb->pmpro_membership_orders WHERE user_id = '" . $user_id . "' AND status = 'success' ORDER BY id DESC");
+			foreach($other_order_ids as $order_id)
+			{
+				$c_order = new MemberOrder($order_id);
+				$c_order->cancel();
+			}
+		}
+
+		//insert current membership
+		if(!empty($level)) //are we getting a new one or just cancelling the old ones
+		{
+			if(is_array($level))
+			{
+				//make sure the dates are in good formats
+				if($level['startdate'] != "NOW()" && substr($level['startdate'], 0, 1) != "'")
+					$level['startdate'] = "'" . $level['startdate'] . "'";
+				if($level['enddate'] != "NOW()" && substr($level['enddate'], 0, 1) != "'")
+					$level['enddate'] = "'" . $level['enddate'] . "'";
+				
+				$sql = "INSERT INTO $wpdb->pmpro_memberships_users (user_id, membership_id, code_id, initial_payment, billing_amount, cycle_number, cycle_period, billing_limit, trial_amount, trial_limit, startdate, enddate)
+						VALUES('" . $level['user_id'] . "',
+						'" . $level['membership_id'] . "',
+						'" . $level['code_id'] . "',
+						'" . $level['initial_payment'] . "',
+						'" . $level['billing_amount'] . "',
+						'" . $level['cycle_number'] . "',
+						'" . $level['cycle_period'] . "',
+						'" . $level['billing_limit'] . "',
+						'" . $level['trial_amount'] . "',
+						'" . $level['trial_limit'] . "',
+						" . $level['startdate'] . ",
+						" . $level['enddate'] . ")";
+				if(!$wpdb->query($sql))
+				{
+					$pmpro_error = "Error interacting with database: ".(mysql_errno()?mysql_error():'unavailable');
+					return false;
+				}
 			}
 			else
-			{				
-				//uh oh										
-				$pmpro_error = "There was an error canceling your membership: " . $order->error;				
-				return false;
-			}							
+			{
+				$sql = "INSERT INTO $wpdb->pmpro_memberships_users (`membership_id`,`user_id`) VALUES ('" . $level . "','" . $user_id . "')";
+				if(!$wpdb->query($sql))
+				{
+					$pmpro_error = "Error interacting with database: ".(mysql_errno()?mysql_error():'unavailable');
+					return false;
+				}
+			}
 		}
-			
-		//adding, changing, or deleting
-		if($level)
-		{						
-			//adding, changing
-			$sql = "REPLACE INTO $wpdb->pmpro_memberships_users (`membership_id`,`user_id`) VALUES ('" . $level . "','" . $user_id . "')";
-		}
+
+		//get level id
+		if(is_array($level))
+			$level_id = $level['membership_id'];	//custom level
 		else
-		{
-			//false or null or 0 was passed, so we're deleting removing
-			$sql = "DELETE FROM $wpdb->pmpro_memberships_users WHERE user_id = '" . $wpdb->escape($user_id) . "' LIMIT 1";			
-		}
+			$level_id = $level;	//just id
 		
-		//run the query, return		
-		if(!$wpdb->query($sql))
-		{
-			if(mysql_errno())
-				$pmpro_error = "Error: " . mysql_error();			
-			return false;
-		}
-		else 
-		{
-			pmpro_set_current_user();
-			do_action("pmpro_after_change_membership_level", $level, $user_id);	//$level is the $level_id here
-			return true;
-		}
+		//update user data and call action
+		pmpro_set_current_user();
+		do_action("pmpro_after_change_membership_level", $level_id, $user_id);	//$level is the $level_id here
+		return true;
 	}
 
 	/* pmpro_toggleMembershipCategory() creates or deletes a linking entry between the membership level and post category tables.
@@ -669,6 +670,32 @@
 
 		//all good
 		return true;
+	}
+
+	/* pmpro_getMembershipCategories() returns the categories for a given level
+	*
+	* $level_id is a valid membership level ID
+	*
+	* Return values:
+	*		Success returns boolean true.
+	*		Failure returns boolean false.
+	*/
+	function pmpro_getMembershipCategories($level_id)
+	{
+		global $wpdb;
+		$categories = $wpdb->get_results("SELECT c.category_id
+											FROM {$wpdb->pmpro_memberships_categories} AS c
+											WHERE c.membership_id = '" . $level_id . "'", ARRAY_N);
+
+		$returns = array();
+		if(is_array($categories))
+		{
+			foreach($categories as $cat)
+			{
+				$returns[] = $cat;
+			}
+		}
+		return $returns;
 	}
   
 	function pmpro_isAdmin($user_id = NULL)
@@ -852,7 +879,7 @@
 		//if we're limiting users by search
 		if($s || $l)
 		{
-			$user_ids_query = "SELECT ID FROM $wpdb->users u LEFT JOIN $wpdb->usermeta um  ON u.ID = um.user_id LEFT JOIN $wpdb->pmpro_memberships_users mu ON u.ID = mu.user_id WHERE 1 ";
+			$user_ids_query = "SELECT u.ID FROM $wpdb->users u LEFT JOIN $wpdb->usermeta um  ON u.ID = um.user_id LEFT JOIN $wpdb->pmpro_memberships_users mu ON u.ID = mu.user_id WHERE mu.status = 'active' ";
 			if($s)
 				$user_ids_query .= "AND (u.user_login LIKE '%$s%' OR u.user_email LIKE '%$s%' OR um.meta_value LIKE '%$s%') ";
 			if($l)
@@ -860,7 +887,7 @@
 		}
 		
 		//query to sum initial payments
-		$sqlQuery = "SELECT SUM(initial_payment) FROM $wpdb->pmpro_memberships_users WHERE 1 ";
+		$sqlQuery = "SELECT SUM(initial_payment) FROM $wpdb->pmpro_memberships_users WHERE `status` = 'active' ";
 		if(!empty($user_ids_query))
 			$sqlQuery .= "AND user_id IN(" . $user_ids_query . ") ";
 		
@@ -876,7 +903,7 @@
 		//if we're limiting users by search
 		if($s || $l)
 		{
-			$user_ids_query = "AND user_id IN(SELECT ID FROM $wpdb->users u LEFT JOIN $wpdb->usermeta um  ON u.ID = um.user_id LEFT JOIN $wpdb->pmpro_memberships_users mu ON u.ID = mu.user_id WHERE 1 ";
+			$user_ids_query = "AND user_id IN(SELECT u.ID FROM $wpdb->users u LEFT JOIN $wpdb->usermeta um  ON u.ID = um.user_id LEFT JOIN $wpdb->pmpro_memberships_users mu ON u.ID = mu.user_id WHERE mu.status = 'active' ";
 			if($s)
 				$user_ids_query .= "AND (u.user_login LIKE '%$s%' OR u.user_email LIKE '%$s%' OR um.meta_value LIKE '%$s%') ";
 			if($l)
@@ -888,14 +915,15 @@
 		
 		//4 queries to get annual earnings for each cycle period. currently ignoring trial periods and billing limits.
 		$sqlQuery = "
-			SELECT SUM((12/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE cycle_period = 'Month' AND cycle_number <> 12 $user_ids_query
+			SELECT SUM((12/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND cycle_period = 'Month' AND cycle_number <> 12 $user_ids_query
 				UNION
-			SELECT SUM((365/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE cycle_period = 'Day' AND cycle_number <> 365 $user_ids_query
+			SELECT SUM((365/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND cycle_period = 'Day' AND cycle_number <> 365 $user_ids_query
 				UNION
-			SELECT SUM((52/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE cycle_period = 'Week' AND cycle_number <> 52 $user_ids_query
+			SELECT SUM((52/cycle_number)*billing_amount) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND cycle_period = 'Week' AND cycle_number <> 52 $user_ids_query
 				UNION
-			SELECT SUM(billing_amount) FROM $wpdb->pmpro_memberships_users WHERE cycle_period = 'Year' $user_ids_query
-		";		
+			SELECT SUM(billing_amount) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND cycle_period = 'Year' $user_ids_query
+		";	
+		
 		$annual_revenues = $wpdb->get_col($sqlQuery);
 				
 		$total = 0;
@@ -1019,7 +1047,7 @@
 		if(!empty($dbcode->starts) && $dbcode->starts > $today)
 		{
 			if($return_errors)
-				return array(false, "This discount code goes into effect on " . date("m/d/Y", $dbcode->starts) . ".");
+				return array(false, "This discount code goes into effect on " . date(get_option('date_format'), $dbcode->starts) . ".");
 			else
 				return false;
 		}
@@ -1028,7 +1056,7 @@
 		if(!empty($dbcode->expires) && $dbcode->expires < $today)
 		{
 			if($return_errors)
-				return array(false, "This discount code expired on " . date("m/d/Y", $dbcode->expires) . ".");
+				return array(false, "This discount code expired on " . date(get_option('date_format'), $dbcode->expires) . ".");
 			else
 				return false;
 		}
@@ -1100,35 +1128,145 @@
 		}
 		return $text;
 	}
-	
+
+	/* pmpro_getMembershipLevelForUser() returns the first active membership level for a user
+	 *
+	 * If $user_id is omitted, the value will be retrieved from $current_user.
+	 *
+	 * Return values:
+	 *		Success returns the level object.
+	 *		Failure returns false.
+	 */
 	function pmpro_getMembershipLevelForUser($user_id = NULL)
 	{
-		if(empty($user_id))		
+		if(empty($user_id))
 		{
 			global $current_user;
 			$user_id = $current_user->ID;
 		}
 		
 		if(empty($user_id))
+		{
 			return false;
-		
-		global $wpdb;		
-		return $wpdb->get_row("SELECT l.id AS ID, l.id as id, l.name, l.description, mu.initial_payment, mu.billing_amount, mu.cycle_number, mu.cycle_period, mu.billing_limit, mu.trial_amount, mu.trial_limit, mu.code_id as code_id, UNIX_TIMESTAMP(startdate) as startdate, UNIX_TIMESTAMP(enddate) as enddate
-															FROM {$wpdb->pmpro_membership_levels} AS l
-															JOIN {$wpdb->pmpro_memberships_users} AS mu ON (l.id = mu.membership_id)
-															WHERE mu.user_id = $user_id
-															LIMIT 1");
-	}
-	
-	function pmpro_getLevel($level_id)
-	{
-		global $pmpro_levels;
-		if(isset($pmpro_levels[$level_id]))
-			return $pmpro_levels[$level_id];
+		}
+
+		global $all_membership_levels;
+
+		if(isset($all_membership_levels[$user_id]))
+		{
+			return $all_membership_levels[$user_id];
+		}
 		else
 		{
 			global $wpdb;
-			$pmpro_levels[$level_id] = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . $level_id . "' LIMIT 1");
+			$all_membership_levels[$user_id] = $wpdb->get_row("SELECT
+																l.id AS ID,
+																l.id as id,
+																mu.id as subscription_id,
+																l.name AS name,
+																l.description,
+																l.expiration_number,
+																l.expiration_period,
+																mu.initial_payment,
+																mu.billing_amount,
+																mu.cycle_number,
+																mu.cycle_period,
+																mu.billing_limit,
+																mu.trial_amount,
+																mu.trial_limit,
+																mu.code_id as code_id,
+																UNIX_TIMESTAMP(startdate) as startdate,
+																UNIX_TIMESTAMP(enddate) as enddate
+															FROM {$wpdb->pmpro_membership_levels} AS l
+															JOIN {$wpdb->pmpro_memberships_users} AS mu ON (l.id = mu.membership_id)
+															WHERE mu.user_id = $user_id AND mu.status = 'active'
+															LIMIT 1");
+			return $all_membership_levels[$user_id];
+		}
+	}
+
+	/* pmpro_getMembershipLevelsForUser() returns the membership levels for a user
+	 *
+	 * If $user_id is omitted, the value will be retrieved from $current_user.
+	 * By default it only includes actvie memberships.
+	 *
+	 * Return values:
+	 *		Success returns an array of level objects.
+	 *		Failure returns false.
+	 */
+	function pmpro_getMembershipLevelsForUser($user_id = NULL, $include_inactive = false)
+	{
+		if(empty($user_id))
+		{
+			global $current_user;
+			$user_id = $current_user->ID;
+		}
+
+		if(empty($user_id))
+		{
+			return false;
+		}
+
+		global $wpdb;
+		return $wpdb->get_results("SELECT
+									l.id AS ID,
+									l.id as id,
+									mu.id as subscription_id,
+									l.name,
+									l.description,
+									l.expiration_number,
+									l.expiration_period,
+									mu.initial_payment,
+									mu.billing_amount,
+									mu.cycle_number,
+									mu.cycle_period,
+									mu.billing_limit,
+									mu.trial_amount,
+									mu.trial_limit,
+									mu.code_id as code_id,
+									UNIX_TIMESTAMP(startdate) as startdate,
+									UNIX_TIMESTAMP(enddate) as enddate
+								FROM {$wpdb->pmpro_membership_levels} AS l
+								JOIN {$wpdb->pmpro_memberships_users} AS mu ON (l.id = mu.membership_id)
+								WHERE mu.user_id = $user_id".($include_inactive?"":" AND mu.status = 'active'"));
+	}
+
+	/* pmpro_getLevel() returns the level object for a level
+	 *
+	 * $level may be the level id or name
+	 *
+	 * Return values:
+	 *		Success returns the level object.
+	 *		Failure returns false.
+	 */
+	function pmpro_getLevel($level)
+	{
+		global $pmpro_levels;
+
+		if(is_object($level) && !empty($level->id))
+			$level = $level->id;
+		
+		//was a name passed? (Todo: make sure level names have at least one non-numeric character.
+		if(is_numeric($level))
+		{
+			$level_id = intval($level);
+			if(isset($pmpro_levels[$level_id]))
+			{
+				return $pmpro_levels[$level_id];
+			}
+			else
+			{
+				global $wpdb;
+				$pmpro_levels[$level_id] = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . $level_id . "' LIMIT 1");
+				return $pmpro_levels[$level_id];
+			}
+		}
+		else
+		{
+			global $wpdb;
+			$level_obj = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_levels WHERE name = '" . $level . "' LIMIT 1");
+			$level_id = $level->ID;
+			$pmpro_levels[$level_id] = $level_obj;
 			return $pmpro_levels[$level_id];
 		}
 	}
@@ -1239,5 +1377,100 @@
 		}
 		
 		return $domain;
+	}
+	
+	/*
+		Get a member's start date... either in general or for a specific level_id.
+	*/
+	function pmpro_getMemberStartdate($user_id = NULL, $level_id = 0)
+	{		
+		if(empty($user_id))
+		{
+			global $current_user;
+			$user_id = $current_user->ID;
+		}
+
+		global $pmpro_startdates;	//for cache
+		if(empty($pmpro_startdates[$user_id][$level_id]))
+		{			
+			global $wpdb;
+			
+			if(!empty($level_id))
+				$sqlQuery = "SELECT UNIX_TIMESTAMP(startdate) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND membership_id IN(" . $wpdb->escape($level_id) . ") AND user_id = '" . $user_id . "' ORDER BY id LIMIT 1";		
+			else
+				$sqlQuery = "SELECT UNIX_TIMESTAMP(startdate) FROM $wpdb->pmpro_memberships_users WHERE status = 'active' AND user_id = '" . $user_id . "' ORDER BY id LIMIT 1";		
+						
+			$startdate = $wpdb->get_var($sqlQuery);
+			
+			$pmpro_startdates[$user_id][$level_id] = $startdate;
+		}
+		
+		return $pmpro_startdates[$user_id][$level_id];
+	}
+	
+	/*
+		How long has this member been a member
+	*/
+	function pmpro_getMemberDays($user_id = NULL, $level_id = 0)
+	{
+		if(empty($user_id))
+		{
+			global $current_user;
+			$user_id = $current_user->ID;
+		}
+		
+		global $pmpro_member_days;
+		if(empty($pmpro_member_days[$user_id][$level_id]))
+		{		
+			$startdate = pmpro_getMemberStartdate($user_id, $level_id);
+				
+			$now = time();
+			$days = ($now - $startdate)/3600/24;
+					
+			$pmpro_member_days[$user_id][$level_id] = $days;
+		}
+		
+		return $pmpro_member_days[$user_id][$level_id];
+	}
+	
+	//the start of a message handling script
+	function pmpro_setMessage($message, $type, $force = false)
+	{
+		global $pmpro_msg, $pmpro_msgt;
+		
+		//for now, we only show the first message generated
+		if($force || empty($pmpro_msg))
+		{
+			$pmpro_msg = $message;
+			$pmpro_msgt = $type;
+		}
+	}
+	
+	//used in class definitions for input fields to see if there was an error
+	function pmpro_getClassForField($field)
+	{
+		global $pmpro_error_fields, $pmpro_required_billing_fields, $pmpro_required_user_fields;
+		$classes = array();
+
+		//error on this field?
+		if(in_array($field, $pmpro_error_fields))
+		{
+			$classes[] = "pmpro_error";
+		}		
+		
+		$required_fields = array_merge(array_keys($pmpro_required_billing_fields), array_keys($pmpro_required_user_fields));
+		
+		//required?
+		if(in_array($field, $required_fields))
+		{
+			$classes[] = "pmpro_required";
+		}	
+					
+		$classes = apply_filters("pmpro_field_classes", $classes, $field);
+		
+		if(!empty($classes))
+			return implode(" ", $classes);
+		else
+			return "";
 	}
 ?>

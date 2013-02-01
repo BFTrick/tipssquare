@@ -46,7 +46,7 @@
 						
 			//paypal profile stuff
 			$nvpStr = "";
-			$nvpStr .="&AMT=" . $initial_payment . "&CURRENCYCODE=" . $pmpro_currency . "&PROFILESTARTDATE=" . $order->ProfileStartDate;
+			$nvpStr .="&AMT=" . $initial_payment . "&CURRENCYCODE=" . $pmpro_currency . "&PROFILESTARTDATE=" . $order->ProfileStartDate;			
 			$nvpStr .= "&BILLINGPERIOD=" . $order->BillingPeriod . "&BILLINGFREQUENCY=" . $order->BillingFrequency . "&AUTOBILLAMT=AddToNextBilling";
 			$nvpStr .= "&DESC=" . urlencode(substr($order->membership_level->name . " at " . get_bloginfo("name"), 0, 127));
 			$nvpStr .= "&NOTIFYURL=" . urlencode(admin_url('admin-ajax.php') . "?action=ipnhandler");
@@ -63,7 +63,7 @@
 				$trial_tax = $order->getTaxForPrice($trial_amount);
 				$trial_amount = round((float)$trial_amount + (float)$trial_tax, 2);
 				
-				$nvpStr .= "&TRIALBILLINGPERIOD=" . $order->TrialBillingPeriod . "&TRIALBILLINGFREQUENCY=" . $order->TrialBillingFrequency . "&TRIALAMNT=" . $trial_amount;
+				$nvpStr .= "&TRIALBILLINGPERIOD=" . $order->TrialBillingPeriod . "&TRIALBILLINGFREQUENCY=" . $order->TrialBillingFrequency . "&TRIALAMT=" . $trial_amount;
 			}
 			if(!empty($order->TrialBillingCycles))
 				$nvpStr .= "&TRIALTOTALBILLINGCYCLES=" . $order->TrialBillingCycles;
@@ -81,7 +81,7 @@
 			if(!empty($additional_parameters))
 			{
 				foreach($additional_parameters as $key => $value)				
-					$nvpStr .= urlencode("&" . $key . "=" . $value);
+					$nvpStr .= "&" . $key . "=" . urlencode($value);
 			}						
 			
 			$nvpStr .= "&CANCELURL=" . urlencode(pmpro_url("levels"));									
@@ -167,6 +167,8 @@
 			if(!empty($order->Token))
 				$nvpStr .= "&TOKEN=" . $order->Token;
 			$nvpStr .="&AMT=" . $amount . "&CURRENCYCODE=" . $pmpro_currency . "&PROFILESTARTDATE=" . $order->ProfileStartDate;
+			if(!empty($amount_tax))
+				$nvpStr .= "&TAXAMT=" . $amount_tax;
 			$nvpStr .= "&BILLINGPERIOD=" . $order->BillingPeriod . "&BILLINGFREQUENCY=" . $order->BillingFrequency . "&AUTOBILLAMT=AddToNextBilling";
 			$nvpStr .= "&DESC=" . urlencode(substr($order->membership_level->name . " at " . get_bloginfo("name"), 0, 127));
 			$nvpStr .= "&NOTIFYURL=" . urlencode(admin_url('admin-ajax.php') . "?action=ipnhandler");
@@ -178,8 +180,8 @@
 			$this->httpParsedResponseAr = $this->PPHttpPost('DoExpressCheckoutPayment', $nvpStr);
 						
 			if("SUCCESS" == strtoupper($this->httpParsedResponseAr["ACK"]) || "SUCCESSWITHWARNING" == strtoupper($this->httpParsedResponseAr["ACK"])) {			
-				$order->payment_transaction_id = urldecode($this->httpParsedResponseAr['PROFILEID']);								
-				$order->status = "firstpayment";				
+				$order->payment_transaction_id = urldecode($this->httpParsedResponseAr['TRANSACTIONID']);								
+				$order->status = "success";				
 				
 				//update order
 				$order->saveOrder();	
@@ -217,7 +219,9 @@
 			$nvpStr = "";
 			if(!empty($order->Token))
 				$nvpStr .= "&TOKEN=" . $order->Token;		
-			$nvpStr .="&INITAMT=" . $initial_payment . "&AMT=" . $order->PaymentAmount . "&CURRENCYCODE=" . $pmpro_currency . "&PROFILESTARTDATE=" . $order->ProfileStartDate;
+			$nvpStr .="&INITAMT=" . $initial_payment . "&AMT=" . $amount . "&CURRENCYCODE=" . $pmpro_currency . "&PROFILESTARTDATE=" . $order->ProfileStartDate;
+			if(!empty($amount_tax))
+				$nvpStr .= "&TAXAMT=" . $amount_tax;
 			$nvpStr .= "&BILLINGPERIOD=" . $order->BillingPeriod . "&BILLINGFREQUENCY=" . $order->BillingFrequency . "&AUTOBILLAMT=AddToNextBilling";			
 			$nvpStr .= "&NOTIFYURL=" . urlencode(admin_url('admin-ajax.php') . "?action=ipnhandler");
 			$nvpStr .= "&DESC=" . urlencode(substr($order->membership_level->name . " at " . get_bloginfo("name"), 0, 127));
@@ -233,7 +237,7 @@
 				$trial_tax = $order->getTaxForPrice($trial_amount);
 				$trial_amount = round((float)$trial_amount + (float)$trial_tax, 2);
 				
-				$nvpStr .= "&TRIALBILLINGPERIOD=" . $order->TrialBillingPeriod . "&TRIALBILLINGFREQUENCY=" . $order->TrialBillingFrequency . "&TRIALAMNT=" . $trial_amount;
+				$nvpStr .= "&TRIALBILLINGPERIOD=" . $order->TrialBillingPeriod . "&TRIALBILLINGFREQUENCY=" . $order->TrialBillingFrequency . "&TRIALAMT=" . $trial_amount;
 			}
 			if(!empty($order->TrialBillingCycles))
 				$nvpStr .= "&TRIALTOTALBILLINGCYCLES=" . $order->TrialBillingCycles;
