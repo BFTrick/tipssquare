@@ -1,0 +1,5 @@
+/* Hide the "all | published | deleted" links on the Venue custom post type edit page */
+#wpbody-content .wrap .subsubsub
+{
+	display: none;
+}

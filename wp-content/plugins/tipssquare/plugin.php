@@ -53,8 +53,11 @@ class Tipssquare {
 		// TODO - fire off this method in WP Cron instead of on every page load
 		$this->fetch_tips();
 
-		// Add functionality for user permissions (capabilities) for the venue custom post type
+		// add functionality for user permissions (capabilities) for the venue custom post type
 		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
+
+		// add assets
+		add_action('admin_head', array( &$this, 'load_assets' ) );
 
 		// after this plugin is done loaded leave a hook for other plugins
 		do_action('tipssquare_loaded');
@@ -387,6 +390,17 @@ class Tipssquare {
 
 		// Return the capabilities required by the user. */
 		return $caps;
+	}
+
+	public function load_assets( ) 
+	{
+		// check to make sure we're on the right page
+		if ( strpos( $_SERVER[ 'REQUEST_URI' ], 'post_type=fsvenue' ) !== false ) 
+		{
+			// add some css
+			wp_register_style( 'tipssquare_styles', plugins_url('assets/style.css', __FILE__) );
+			wp_enqueue_style( 'tipssquare_styles' );
+		}
 	}
 }
 
