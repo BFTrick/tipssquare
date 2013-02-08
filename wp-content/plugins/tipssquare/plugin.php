@@ -44,14 +44,18 @@ class Tipssquare {
 		add_action('admin_head-post.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
 		add_action('admin_head-post-new.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
 
+		// change the default email preferences
+		add_filter( 'wp_mail_from', array( &$this, 'just_use_my_email' ) );
+		add_filter( 'wp_mail_from_name', array( &$this, 'just_use_my_email_name' ) );
+
 		// initialize venuesToQuery
 		// for now we will programatically set these variables in the code
 		// at a future date this will be pulled from the DB
 		$this->venuesToQuery = array("4b524e1bf964a5201c7627e3");
 
-		// query locations for tips
+		// run the main function of the program
 		// TODO - fire off this method in WP Cron instead of on every page load
-		$this->fetch_tips();
+		$this->run();
 
 		// add functionality for user permissions (capabilities) for the venue custom post type
 		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
@@ -119,108 +123,38 @@ class Tipssquare {
 	}
 
 
-	// This function fetches the tips for all venues
-	public function fetch_tips()
+	// This function runs the main plugin functionality
+	// It...
+	// 1) fetches tips
+	// 2) queries for existing tips
+	// 3) queries for venue observers
+	// 4) sends email notifications
+	public function run()
 	{
-		global $wpdb;
 
-		// if there are no venues then don't bother
+		// if there are no venues to query then don't bother
 		if(empty($this->venuesToQuery))
 		{
 			return false;
 		}
 
-		// loop through each venue and get it's tips
+		// loop through each venue and process it
 		foreach ($this->venuesToQuery as $key => $venueId)
 		{
-			// assemble the url for the foursquare api call
-			// ex. https://api.foursquare.com/v2/venues/40a55d80f964a52020f31ee3/tips?sort=recent&v=yyyymmdd&client_id=aaaaabbbbbbcccc11113344kkd8did&client_secret=bbbbbcccccdddddeeeeeee858587guuguuuu999999
-			$apiUrl = $this->fsVenuesApiBaseUri . "/" . $venueId . "/" . $this->fsTipsApiPage . "?sort=" . $this->fsTipsSortDirection . "&v=" . date("Ymd") . "&client_id=" . $this->fsClientId . "&client_secret=" . $this->fsClientSecret;
+			// get the tips from foursquare
+			$tips = $this->fetch_tips($venueId);
+			
+			// get existing tips from the database
+			$existingTipIds = $this->query_existing_tips();
 
-			// get the response from the foursquare API
-			$ApiResultString = file_get_contents($apiUrl);
+			// get observers for this venue (the people who want to receive notifications)
+			$observers = $this->query_venue_observers();
 
-			// parse the response
-			$ApiResultString = json_decode($ApiResultString);
-			
-			// if we get a 200 response (OK) then proceed
-			if (($ApiResultString->meta->code != 200) || ($ApiResultString->response->tips->count < 1))
-			{
-				// print error
-				// TODO
-				return false;
-			}
-			
-			// save the tips out of the api response
-			$tips = $ApiResultString->response->tips->items;
-
-			// get existing tips
-			// right now we have a limit of 1,000,000 tips, after that this program will start creating duplicate tips
-			$existingTips = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'foursquare_tip') );  
-			
-			// put the existing tip ids into a convenient array for future use
-			$existingTipIds = array();
-			if(!empty($existingTips))
-			{
-				foreach ($existingTips as $key => $value)
-				{
-					$existingTipIds[] = $value->id;
-				}
-			}
-			
-			// get the venue's observer's / 
-			// Pseudo code for the query:
-			// Find the email of the post author of a certain venue
-			$observers = $wpdb->get_results( 
-				"SELECT user_email, display_name
-				FROM $wpdb->users 
-				WHERE ID IN(
-					SELECT post_author 
-					FROM $wpdb->posts 
-					WHERE ID IN(
-						SELECT post_id
-						FROM $wpdb->postmeta 
-						WHERE (meta_key = '_fsvenue_post_name' AND meta_value = '".$venueId."')
-					)
-				)" 
-			);
-			
 			// check to make sure there is at least one user monitoring this venue
 			// if(!empty($observers))
 			if(true)
 			{
-				// loop through each tip and add it to DB if it isn't already there
-				foreach ($tips as $tipKey => $tip)
-				{
-					// see if the tip already exists
-					$tipAlreadyExists = in_array($tip->id, $existingTipIds);
-
-					// if no post exists add it to the DB & email it!
-					// if(!$tipAlreadyExists)
-					if(true)
-					{
-						$newPost = array(
-							'post_content'		=> $tip->text,
-							'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
-							'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
-							'post_status'		=> "publish",
-							'post_title'		=> $tip->id,
-							'post_type'			=> 'foursquare_tip',
-						);
-						$post_id = wp_insert_post($newPost, true);
-
-						// add the meta data
-						add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
-						add_post_meta($post_id, "photourl", $tip->photourl);
-						add_post_meta($post_id, "likes", $tip->likes);
-						add_post_meta($post_id, "id", $tip->id);
-
-						// send email
-						$this->send_tip_notification_emails($observers);
-						
-					}
-
-				}
+				$this->add_tips_to_db($tips, $existingTipIds, $observers);
 			}
 			else
 			{
@@ -230,16 +164,125 @@ class Tipssquare {
 			}
 
 		}
+
+	}
+
+
+	// This function fetches the tips for all venues
+	public function fetch_tips($venueId)
+	{
+		// assemble the url for the foursquare api call
+		// ex. https://api.foursquare.com/v2/venues/40a55d80f964a52020f31ee3/tips?sort=recent&v=yyyymmdd&client_id=aaaaabbbbbbcccc11113344kkd8did&client_secret=bbbbbcccccdddddeeeeeee858587guuguuuu999999
+		$apiUrl = $this->fsVenuesApiBaseUri . "/" . $venueId . "/" . $this->fsTipsApiPage . "?sort=" . $this->fsTipsSortDirection . "&v=" . date("Ymd") . "&client_id=" . $this->fsClientId . "&client_secret=" . $this->fsClientSecret;
+
+		// get the response from the foursquare API
+		$ApiResultString = file_get_contents($apiUrl);
+
+		// parse the response
+		$ApiResultString = json_decode($ApiResultString);
 		
+		// if we get a 200 response (OK) then proceed
+		if (($ApiResultString->meta->code != 200) || ($ApiResultString->response->tips->count < 1))
+		{
+			// print error
+			// TODO
+			return false;
+		}
+		
+		// save the tips out of the api response
+		$tips = $ApiResultString->response->tips->items;
+
+		return $tips;
+		
+	}
+
+
+	// get existing tips out of DB
+	public function query_existing_tips()
+	{
+
+		// right now we have a limit of 1,000,000 tips, after that this program will start creating duplicate tips
+		$existingTips = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'foursquare_tip') );  
+		
+		// put the existing tip ids into a convenient array for future use
+		$existingTipIds = array();
+		if(!empty($existingTips))
+		{
+			foreach ($existingTips as $key => $value)
+			{
+				$existingTipIds[] = $value->id;
+			}
+		}
+
+		return $existingTipIds;
+
+	}
+
+
+	// get the venue's observer's (the people that want to receive notifications about this venue)
+	public function query_venue_observers()
+	{
+		global $wpdb;
+
+		// Pseudo code for the query:
+		// 	Find the email of the post author of a certain venue
+		$observers = $wpdb->get_results( 
+			"SELECT user_email, display_name
+			FROM $wpdb->users 
+			WHERE ID IN(
+				SELECT post_author 
+				FROM $wpdb->posts 
+				WHERE ID IN(
+					SELECT post_id
+					FROM $wpdb->postmeta 
+					WHERE (meta_key = '_fsvenue_post_name' AND meta_value = '".$venueId."')
+				)
+			)" 
+		);
+
+	}
+
+
+	// add venue tips to the database
+	public function add_tips_to_db($tips, $existingTipIds, $observers)
+	{
+		// loop through each tip and add it to DB if it isn't already there
+		foreach ($tips as $tipKey => $tip)
+		{
+			// see if the tip already exists
+			$tipAlreadyExists = in_array($tip->id, $existingTipIds);
+
+			// if no post exists add it to the DB & email it!
+			if(!$tipAlreadyExists)
+			{
+				$newPost = array(
+					'post_content'		=> $tip->text,
+					'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
+					'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
+					'post_status'		=> "publish",
+					'post_title'		=> $tip->id,
+					'post_type'			=> 'foursquare_tip',
+				);
+				$post_id = wp_insert_post($newPost, true);
+
+				// add the meta data
+				add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
+				add_post_meta($post_id, "photourl", $tip->photourl);
+				add_post_meta($post_id, "likes", $tip->likes);
+				add_post_meta($post_id, "id", $tip->id);
+
+				// send email
+				$this->send_tip_notification_emails($observers);
+				
+			}
+
+		}
 	}
 
 
 	// prepare and send all of the tip notification emails
 	public function send_tip_notification_emails($observers)
 	{
-		// set email headers
-		$headers[] = 'From: TipsSquare <noreply@tipssquare.com>';
-
 		// write email content
 		$content = $this->generate_tip_notification_email_content();
 
@@ -247,8 +290,7 @@ class Tipssquare {
 		// wp_mail($observers, 'Foursquare Tip Notification', $content, $headers);
 
 		// test email
-		wp_mail("bftrick@gmail.com", 'Foursquare Tip Notification', $content, $headers);
-		echo "test-email";exit();
+		wp_mail("bftrick@gmail.com", 'Foursquare Tip Notification', $content);
 	}
 
 
@@ -261,6 +303,22 @@ class Tipssquare {
 		
 		return $message;
 	}
+
+
+	// change the default From email address
+	public function just_use_my_email()
+	{
+		return 'noreply@tipssquare.com';
+	}
+
+
+	// change the default email name
+	public function just_use_my_email_name()
+	{
+		return 'TipsSquare';
+	}
+
+	
 
 
 	// edit the columns for the foursquare venue custom post type
