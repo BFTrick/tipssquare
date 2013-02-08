@@ -47,7 +47,7 @@ class Tipssquare {
 		// initialize venuesToQuery
 		// for now we will programatically set these variables in the code
 		// at a future date this will be pulled from the DB
-		$this->venuesToQuery = array("4bb7946eb35776b039d0c701");
+		$this->venuesToQuery = array("4b524e1bf964a5201c7627e3");
 
 		// query locations for tips
 		// TODO - fire off this method in WP Cron instead of on every page load
@@ -122,6 +122,8 @@ class Tipssquare {
 	// This function fetches the tips for all venues
 	public function fetch_tips()
 	{
+		global $wpdb;
+
 		// if there are no venues then don't bother
 		if(empty($this->venuesToQuery))
 		{
@@ -153,8 +155,8 @@ class Tipssquare {
 			$tips = $ApiResultString->response->tips->items;
 
 			// get existing tips
-			// right now we have a limit of 100,000 tips, after that this program will start creating duplicate tips
-			$existingTips = get_posts( array('posts_per_page' => 100000, 'post_type' => 'foursquare_tip') );  
+			// right now we have a limit of 1,000,000 tips, after that this program will start creating duplicate tips
+			$existingTips = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'foursquare_tip') );  
 			
 			// put the existing tip ids into a convenient array for future use
 			$existingTipIds = array();
@@ -165,41 +167,99 @@ class Tipssquare {
 					$existingTipIds[] = $value->id;
 				}
 			}
-
-			// loop through each tip and add it to DB if it isn't already there
-			foreach ($tips as $tipKey => $tip)
+			
+			// get the venue's observer's / 
+			// Pseudo code for the query:
+			// Find the email of the post author of a certain venue
+			$observers = $wpdb->get_results( 
+				"SELECT user_email, display_name
+				FROM $wpdb->users 
+				WHERE ID IN(
+					SELECT post_author 
+					FROM $wpdb->posts 
+					WHERE ID IN(
+						SELECT post_id
+						FROM $wpdb->postmeta 
+						WHERE (meta_key = '_fsvenue_post_name' AND meta_value = '".$venueId."')
+					)
+				)" 
+			);
+			
+			// check to make sure there is at least one user monitoring this venue
+			// if(!empty($observers))
+			if(true)
 			{
-				// see if the tip already exists
-				$tipAlreadyExists = in_array($tip->id, $existingTipIds);
-				
-				// if no post exists add it to the DB!
-				if(!$tipAlreadyExists)
+				// loop through each tip and add it to DB if it isn't already there
+				foreach ($tips as $tipKey => $tip)
 				{
-					$newPost = array(
-						'post_content'		=> $tip->text,
-						'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
-						'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
-						'post_status'		=> "publish",
-						'post_title'		=> $tip->id,
-						'post_type'			=> 'foursquare_tip',
-					);
-					$post_id = wp_insert_post($newPost, true);
+					// see if the tip already exists
+					$tipAlreadyExists = in_array($tip->id, $existingTipIds);
 
-					// add the meta data
-					add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
-					add_post_meta($post_id, "photourl", $tip->photourl);
-					add_post_meta($post_id, "likes", $tip->likes);
-					add_post_meta($post_id, "id", $tip->id);
+					// if no post exists add it to the DB & email it!
+					// if(!$tipAlreadyExists)
+					if(true)
+					{
+						$newPost = array(
+							'post_content'		=> $tip->text,
+							'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
+							'post_date_gmt'		=> date('Y-m-d H:i:s', $tip->createdAt),
+							'post_status'		=> "publish",
+							'post_title'		=> $tip->id,
+							'post_type'			=> 'foursquare_tip',
+						);
+						$post_id = wp_insert_post($newPost, true);
 
-					// add a foursquare user to the database
-					// TODO
+						// add the meta data
+						add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
+						add_post_meta($post_id, "photourl", $tip->photourl);
+						add_post_meta($post_id, "likes", $tip->likes);
+						add_post_meta($post_id, "id", $tip->id);
+
+						// send email
+						$this->send_tip_notification_emails($observers);
+						
+					}
 
 				}
-
+			}
+			else
+			{
+				// no post author for a venue? that is very weird...How did this post even get entered into the DB??
+				// I should probably log some type of error
+				// TODO
 			}
 
 		}
 		
+	}
+
+
+	// prepare and send all of the tip notification emails
+	public function send_tip_notification_emails($observers)
+	{
+		// set email headers
+		$headers[] = 'From: TipsSquare <noreply@tipssquare.com>';
+
+		// write email content
+		$content = $this->generate_tip_notification_email_content();
+
+		// production email
+		// wp_mail($observers, 'Foursquare Tip Notification', $content, $headers);
+
+		// test email
+		wp_mail("bftrick@gmail.com", 'Foursquare Tip Notification', $content, $headers);
+		echo "test-email";exit();
+	}
+
+
+	// generate tip notification email content
+	public function generate_tip_notification_email_content()
+	{
+		$message = "Hi there,";
+		$message .= "\r\r";
+		$message .= "We still need to write the content in the tip notification emails. Don't worry it's coming soon!";
+		
+		return $message;
 	}
 
 
