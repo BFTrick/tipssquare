@@ -19,9 +19,6 @@ class Tipssquare {
 	private $fsClientId = "UQ1ZQLV4AHI34LGUBXNXFALIS1AY0NYXPIJE1GUFMV1PVRQG";
 	private $fsClientSecret = "FW2FYYNFQZG1AQHFBOTIOUEQPEIDONVY5KZVUORK2QENKNC1";
 
-	// misc
-	private $venuesToQuery; // this variable tracks which venues need to be queried. For right now this variable will be initialized via code. In the future it will pull down data from the DB.
-
 	public function __construct() 
 	{
 		add_action( 'init', array( &$this, 'init' ) );
@@ -47,11 +44,6 @@ class Tipssquare {
 		// change the default email preferences
 		add_filter( 'wp_mail_from', array( &$this, 'just_use_my_email' ) );
 		add_filter( 'wp_mail_from_name', array( &$this, 'just_use_my_email_name' ) );
-
-		// initialize venuesToQuery
-		// for now we will programatically set these variables in the code
-		// at a future date this will be pulled from the DB
-		$this->venuesToQuery = array("4b524e1bf964a5201c7627e3");
 
 		// run the main function of the program
 		// TODO - fire off this method in WP Cron instead of on every page load
@@ -125,21 +117,25 @@ class Tipssquare {
 
 	// This function runs the main plugin functionality
 	// It...
-	// 1) fetches tips
-	// 2) queries for existing tips
-	// 3) queries for venue observers
-	// 4) sends email notifications
+	// * gets venues to query
+	// * fetches tips
+	// * queries for existing tips
+	// * queries for venue observers
+	// * sends email notifications
 	public function run()
 	{
 
+		// get venues to monitor
+		$venuesToMonitor = $this->query_venues_to_monitor();
+
 		// if there are no venues to query then don't bother
-		if(empty($this->venuesToQuery))
+		if(empty($this->venuesToMonitor))
 		{
 			return false;
 		}
 
 		// loop through each venue and process it
-		foreach ($this->venuesToQuery as $key => $venueId)
+		foreach ($this->venuesToMonitor as $key => $venueId)
 		{
 			// get the tips from foursquare
 			$tips = $this->fetch_tips($venueId);
@@ -168,6 +164,28 @@ class Tipssquare {
 	}
 
 
+	// get venues to monitor
+	public function query_venues_to_monitor()
+	{
+		// initialize venuesToMonitor
+		// for now we will programatically set these variables in the code
+		// at a future date this will be pulled from the DB
+		// $venuesToMonitor = array("4b524e1bf964a5201c7627e3");
+		$venues = array();
+
+		// get a list of venues
+		$query = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'fsvenue') ); 
+
+		// for each venue get the post meta data and save it into an array
+		foreach ($query as $key => $value) 
+		{
+			$venues[] = get_post_meta($value->ID, "_fsvenue_post_name", true);
+		}
+
+		return $venues;
+	}
+
+
 	// This function fetches the tips for all venues
 	public function fetch_tips($venueId)
 	{
@@ -181,11 +199,17 @@ class Tipssquare {
 		// parse the response
 		$ApiResultString = json_decode($ApiResultString);
 		
-		// if we get a 200 response (OK) then proceed
-		if (($ApiResultString->meta->code != 200) || ($ApiResultString->response->tips->count < 1))
+		// if we don't get a 200 response (OK) then throw an error
+		if ($ApiResultString->meta->code != 200)
 		{
 			// print error
 			// TODO
+			return false;
+		}
+
+		// if we get less than 1 response don't bother
+		if ($ApiResultString->response->tips->count < 1)
+		{
 			return false;
 		}
 		
@@ -200,7 +224,6 @@ class Tipssquare {
 	// get existing tips out of DB
 	public function query_existing_tips()
 	{
-
 		// right now we have a limit of 1,000,000 tips, after that this program will start creating duplicate tips
 		$existingTips = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'foursquare_tip') );  
 		
