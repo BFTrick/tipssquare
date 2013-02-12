@@ -45,9 +45,12 @@ class Tipssquare {
 		add_filter( 'wp_mail_from', array( &$this, 'just_use_my_email' ) );
 		add_filter( 'wp_mail_from_name', array( &$this, 'just_use_my_email_name' ) );
 
-		// run the main function of the program
-		// TODO - fire off this method in WP Cron instead of on every page load
-		$this->run();
+		// schedule an event in wp cron to run the main function of the program
+		if( !wp_next_scheduled( 'check_tips' ) ) 
+		{  
+			wp_schedule_event( time(), 'hourly', 'check_tips' ); 
+		}
+		add_action( 'check_tips', array( &$this, 'run' ) );
 
 		// add functionality for user permissions (capabilities) for the venue custom post type
 		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
@@ -124,7 +127,6 @@ class Tipssquare {
 	// * sends email notifications
 	public function run()
 	{
-
 		// get venues to monitor
 		$venuesToMonitor = $this->query_venues_to_monitor();
 		
