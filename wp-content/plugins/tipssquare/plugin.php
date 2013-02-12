@@ -275,8 +275,12 @@ class Tipssquare {
 			// see if the tip already exists
 			$tipAlreadyExists = in_array($tip->id, $existingTipIds);
 
+			// create the tip creation date variable since we use it in several places
+			$tipCreationDate = date('Y-m-d H:i:s', $tip->createdAt);
+
 			// if no post exists add it to the DB & email it!
-			if(!$tipAlreadyExists)
+			// if(!$tipAlreadyExists)
+			if(true)
 			{
 				$newPost = array(
 					'post_content'		=> $tip->text,
@@ -295,13 +299,35 @@ class Tipssquare {
 				add_post_meta($post_id, "id", $tip->id);
 
 				// send email if the tip was recent
-				if(true)
+				if($this->is_recent_tip($tipCreationDate))
 				{
 					$this->send_tip_notification_emails($observers);
 				}
 			}
-
 		}
+	}
+
+
+	// this function checks if the tip is a recent tip
+	// taken from: http://stackoverflow.com/questions/1940338/date-difference-in-php-on-days
+	public function is_recent_tip($tipCreationDate)
+	{
+		// get todays date
+		$today = date('Y-m-d H:i:s');
+
+		$today = strtotime($today);
+		$tipCreationDate = strtotime($tipCreationDate);
+
+		$seconds_diff = $today - $tipCreationDate;
+
+		$daysSinceTipCreation = floor($seconds_diff/3600/24);
+		
+		// if it has been less than three days since the tip was posted then return true
+		if($daysSinceTipCreation<3)
+		{
+			return true;
+		}
+		return false;
 	}
 
 
