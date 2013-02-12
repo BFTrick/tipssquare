@@ -31,15 +31,15 @@ class Tipssquare {
 		// create venue custom post type 
 		$this->create_venue_post_type();
 
-		// edit the fsvenue edit page column headers 
-		add_filter ("manage_edit-fsvenue_columns", array( &$this, 'fsvenue_edit_columns' ) );
+		// edit the ts_venue edit page column headers 
+		add_filter ("manage_edit-ts_venue_columns", array( &$this, 'ts_venue_edit_columns' ) );
 
-		// edit the fsvenue edit page column values
-		add_action ("manage_posts_custom_column", array( &$this, 'fsvenue_custom_columns' ) );
+		// edit the ts_venue edit page column values
+		add_action ("manage_posts_custom_column", array( &$this, 'ts_venue_custom_columns' ) );
 
 		// hide extra publishing settings
-		add_action('admin_head-post.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
-		add_action('admin_head-post-new.php', array( &$this, 'fsvenue_hide_publishing_actions' ) );
+		add_action('admin_head-post.php', array( &$this, 'ts_venue_hide_publishing_actions' ) );
+		add_action('admin_head-post-new.php', array( &$this, 'ts_venue_hide_publishing_actions' ) );
 
 		// change the default email preferences
 		add_filter( 'wp_mail_from', array( &$this, 'just_use_my_email' ) );
@@ -105,13 +105,13 @@ class Tipssquare {
 		);
 
 		// register the foursquare venue custom post type
-		register_post_type( 'fsvenue', $args );
+		register_post_type( 'ts_venue', $args );
 
 		// save the foursquare venue custom fields in the custom metabox
 		add_action( 'save_post', array( &$this, 'fsvenue_post_save_meta' ), 1, 2 ); 
 
 		// create custom update messages for the foursquare venue custom post type
-		add_filter( 'post_updated_messages', array( &$this, 'fsvenue_updated_messages' ) );
+		add_filter( 'post_updated_messages', array( &$this, 'ts_venue_updated_messages' ) );
 	}
 
 
@@ -174,7 +174,7 @@ class Tipssquare {
 		$venues = array();
 
 		// get a list of venues
-		$query = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'fsvenue') ); 
+		$query = get_posts( array('posts_per_page' => 1000000, 'post_type' => 'ts_venue') ); 
 
 		// for each venue get the post meta data and save it into an array
 		foreach ($query as $key => $value) 
@@ -344,26 +344,26 @@ class Tipssquare {
 	
 
 
-	// edit the columns for the foursquare venue custom post type
-	public function fsvenue_edit_columns($columns) 
+	// edit the columns for the ts_venue custom post type
+	public function ts_venue_edit_columns($columns) 
 	{
 		$columns = array(
 			"cb" => "<input type=\"checkbox\" />",
 			"title" => "Title",
-			"fsvenue_fsid" => "Foursquare ID",
+			"ts_venue_fsid" => "Foursquare ID",
 			);
 		return $columns;
 	}
 
 
-	// set values for the custom columns for the foursquare venue custom post type
+	// set values for the custom columns for the ts_venue custom post type
 	// we're only modifying the foursquare id field since WP already handes the checkbox & title
-	public function fsvenue_custom_columns($column)
+	public function ts_venue_custom_columns($column)
 	{
 		global $post;
 		$custom = get_post_custom();
 		switch ($column){
-			case "fsvenue_fsid":
+			case "ts_venue_fsid":
 				$fsVenueId = $custom['_fsvenue_post_name'][0];
 				?>
 				<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
@@ -374,11 +374,12 @@ class Tipssquare {
 
 
 	// hide the non essential publishing actions in the foursquare venue custom post type
-	public function fsvenue_hide_publishing_actions()
+	public function ts_venue_hide_publishing_actions()
 	{
-		$my_post_type = 'fsvenue';
+		$my_post_type = 'ts_venue';
 		global $post;
-		if($post->post_type == $my_post_type){
+		if($post->post_type == $my_post_type)
+		{
 			echo '
 			<style type="text/css">
 				#misc-publishing-actions, #minor-publishing-actions
@@ -394,7 +395,7 @@ class Tipssquare {
 	// add the meta box
 	public function add_fsvenue_post_type_metabox() 
 	{
-		add_meta_box( 'fsvenue_metabox', 'Venue ID', array( &$this, 'fsvenue_metabox' ), 'fsvenue', 'normal' );
+		add_meta_box( 'fsvenue_metabox', 'Foursquare Venue ID', array( &$this, 'fsvenue_metabox' ), 'ts_venue', 'normal' );
 	}
 
 
@@ -402,6 +403,7 @@ class Tipssquare {
 	public function fsvenue_metabox() 
 	{
 		global $post;
+
 		// Noncename needed to verify where the data originated
 		echo '<input type="hidden" name="fsvenue_post_noncename" id="fsvenue_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
 
@@ -412,7 +414,7 @@ class Tipssquare {
 		?>
 		<div class="width_full p_box">
 			<p>
-				<label>ID<br>
+				<label>Foursquare ID<br>
 					<input type="text" name="fsvenue_post_name" class="widefat" value="<?php echo $fsvenue_post_name; ?>" placeholder="ex. 4bb7946eb35776b039d0c701">
 				</label>
 			</p>
@@ -461,10 +463,10 @@ class Tipssquare {
 
 
 	// add filter to ensure the text "Venue", or "venue", is displayed when user updates a venue 
-	public function fsvenue_updated_messages( $messages ) {
+	public function ts_venue_updated_messages( $messages ) {
 		global $post, $post_ID;
 
-		$messages['fsvenue'] = array(
+		$messages['ts_venue'] = array(
 			0 => '', // Unused. Messages start at index 1.
 			1 => sprintf( __('Venue updated.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
 			6 => sprintf( __('Venue saved.', 'your_text_domain'), esc_url( get_permalink($post_ID) ) ),
@@ -536,7 +538,7 @@ class Tipssquare {
 	public function load_assets( ) 
 	{
 		// check to make sure we're on the right page
-		if ( strpos( $_SERVER[ 'REQUEST_URI' ], 'post_type=fsvenue' ) !== false ) 
+		if ( strpos( $_SERVER[ 'REQUEST_URI' ], 'post_type=ts_venue' ) !== false ) 
 		{
 			// add some css
 			wp_register_style( 'tipssquare_styles', plugins_url('assets/style.css', __FILE__) );
