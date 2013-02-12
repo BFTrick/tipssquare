@@ -127,15 +127,15 @@ class Tipssquare {
 
 		// get venues to monitor
 		$venuesToMonitor = $this->query_venues_to_monitor();
-
+		
 		// if there are no venues to query then don't bother
-		if(empty($this->venuesToMonitor))
+		if(empty($venuesToMonitor))
 		{
 			return false;
 		}
-
+		
 		// loop through each venue and process it
-		foreach ($this->venuesToMonitor as $key => $venueId)
+		foreach ($venuesToMonitor as $key => $venueId)
 		{
 			// get the tips from foursquare
 			$tips = $this->fetch_tips($venueId);
@@ -179,7 +179,7 @@ class Tipssquare {
 		// for each venue get the post meta data and save it into an array
 		foreach ($query as $key => $value) 
 		{
-			$venues[] = get_post_meta($value->ID, "_fsvenue_post_name", true);
+			$venues[] = get_post_meta($value->ID, "fs_venue_id", true);
 		}
 
 		return $venues;
@@ -258,7 +258,7 @@ class Tipssquare {
 				WHERE ID IN(
 					SELECT post_id
 					FROM $wpdb->postmeta 
-					WHERE (meta_key = '_fsvenue_post_name' AND meta_value = '".$venueId."')
+					WHERE (meta_key = 'fs_venue_id' AND meta_value = '".$venueId."')
 				)
 			)" 
 		);
@@ -294,9 +294,11 @@ class Tipssquare {
 				add_post_meta($post_id, "likes", $tip->likes);
 				add_post_meta($post_id, "id", $tip->id);
 
-				// send email
-				$this->send_tip_notification_emails($observers);
-				
+				// send email if the tip was recent
+				if(true)
+				{
+					$this->send_tip_notification_emails($observers);
+				}
 			}
 
 		}
@@ -364,7 +366,7 @@ class Tipssquare {
 		$custom = get_post_custom();
 		switch ($column){
 			case "ts_venue_fsid":
-				$fsVenueId = $custom['_fsvenue_post_name'][0];
+				$fsVenueId = $custom['fs_venue_id'][0];
 				?>
 				<a href="https://foursquare.com/v/<?php echo $fsVenueId; ?>" target="_blank"><?php echo $fsVenueId; ?></a>
 				<?php
@@ -408,14 +410,14 @@ class Tipssquare {
 		echo '<input type="hidden" name="fsvenue_post_noncename" id="fsvenue_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
 
 		// Get the data if its already been entered
-		$fsvenue_post_name = get_post_meta($post->ID, '_fsvenue_post_name', true);
+		$fs_venue_id = get_post_meta($post->ID, 'fs_venue_id', true);
 
 		// Echo out the field
 		?>
 		<div class="width_full p_box">
 			<p>
 				<label>Foursquare ID<br>
-					<input type="text" name="fsvenue_post_name" class="widefat" value="<?php echo $fsvenue_post_name; ?>" placeholder="ex. 4bb7946eb35776b039d0c701">
+					<input type="text" name="fs_venue_id" class="widefat" value="<?php echo $fs_venue_id; ?>" placeholder="ex. 4bb7946eb35776b039d0c701">
 				</label>
 			</p>
 		</div>
@@ -439,7 +441,7 @@ class Tipssquare {
 	    // OK, we're authenticated: we need to find and save the data
 	    // We'll put it into an array to make it easier to loop though.
 	 
-	    $fsvenue_post_meta['_fsvenue_post_name'] = $_POST['fsvenue_post_name'];
+	    $fsvenue_post_meta['fs_venue_id'] = $_POST['fs_venue_id'];
 	 
 	    // Add values as custom fields
 	    // Cycle through the $fsvenue_post_meta array!
