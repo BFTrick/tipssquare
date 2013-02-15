@@ -44,13 +44,17 @@ class Tipssquare {
 		// change the default email preferences
 		add_filter( 'wp_mail_from', array( &$this, 'just_use_my_email' ) );
 		add_filter( 'wp_mail_from_name', array( &$this, 'just_use_my_email_name' ) );
+		add_filter( 'wp_mail_content_type', create_function('', 'return "text/html";') );
 
 		// schedule an event in wp cron to run the main function of the program
+		wp_unschedule_event('check_tips');
 		if( !wp_next_scheduled( 'check_tips' ) ) 
 		{  
-			wp_schedule_event( time(), 'hourly', 'check_tips' ); 
+			wp_schedule_event( time(), 'hourly', 'check_tips' );
 		}
-		add_action( 'check_tips', array( &$this, 'run' ) );
+		// add_action( 'check_tips', array( &$this, 'run' ) );
+		$this->run();
+		exit();
 
 		// add functionality for user permissions (capabilities) for the venue custom post type
 		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
@@ -194,7 +198,7 @@ class Tipssquare {
 		// assemble the url for the foursquare api call
 		// ex. https://api.foursquare.com/v2/venues/40a55d80f964a52020f31ee3/tips?sort=recent&v=yyyymmdd&client_id=aaaaabbbbbbcccc11113344kkd8did&client_secret=bbbbbcccccdddddeeeeeee858587guuguuuu999999
 		$apiUrl = $this->fsVenuesApiBaseUri . "/" . $venueId . "/" . $this->fsTipsApiPage . "?sort=" . $this->fsTipsSortDirection . "&v=" . date("Ymd") . "&client_id=" . $this->fsClientId . "&client_secret=" . $this->fsClientSecret;
-
+		
 		// get the response from the foursquare API
 		$ApiResultString = file_get_contents($apiUrl);
 
@@ -295,15 +299,19 @@ class Tipssquare {
 				$post_id = wp_insert_post($newPost, true);
 
 				// add the meta data
-				add_post_meta($post_id, "canonicalUrl", $tip->canonicalUrl);
-				add_post_meta($post_id, "photourl", $tip->photourl);
-				add_post_meta($post_id, "likes", $tip->likes);
 				add_post_meta($post_id, "id", $tip->id);
+				add_post_meta($post_id, "canonical_url", $tip->canonicalUrl);
+				add_post_meta($post_id, "likes", $tip->likes);
+				if(!empty($tip->photourl))
+				{
+					// only add the photourl if it exists
+					add_post_meta($post_id, "photo_url", $tip->photourl);
+				}
 
 				// send email if the tip was recent
 				if($this->is_recent_tip($tipCreationDate))
 				{
-					$this->send_tip_notification_emails($observers);
+					$this->send_tip_notification_emails($observers, $tip->text, $tip->canonicalUrl, $tip->photourl);
 				}
 			}
 		}
@@ -334,10 +342,10 @@ class Tipssquare {
 
 
 	// prepare and send all of the tip notification emails
-	public function send_tip_notification_emails($observers)
+	public function send_tip_notification_emails($observers, $tipText, $tipCanonicalUrl, $tipPhotoUrl)
 	{
 		// write email content
-		$content = $this->generate_tip_notification_email_content();
+		$content = $this->generate_tip_notification_email_content($tipText, $tipCanonicalUrl, $tipPhotoUrl);
 
 		// production email
 		// wp_mail($observers, 'Foursquare Tip Notification', $content, $headers);
@@ -348,11 +356,34 @@ class Tipssquare {
 
 
 	// generate tip notification email content
-	public function generate_tip_notification_email_content()
+	public function generate_tip_notification_email_content($tipText, $tipCanonicalUrl, $tipPhotoUrl)
 	{
 		$message = "Hi there,";
-		$message .= "\r\r";
-		$message .= "We still need to write the content in the tip notification emails. Don't worry it's coming soon!";
+		$message .= "<br/>";
+		$message .= "<br/>";
+		$message .= "We're just writing to let you know that someone left a tip at one of the venues you manage. Here's what they said:";
+		$message .= "<br/>";
+		$message .= "<br/>";
+		$message .= "<blockquote style='margin-left: 2em; font-style: italic;'>";
+		$message .= "&ldquo;".$tipText."&rdquo;";
+		$message .= "</blockquote>";
+		$message .= "<br/>";
+		$message .= "<br/>";
+		$message .= "Here's the permalink if you want to view it on the website: ".$tipCanonicalUrl;
+		$message .= "<br/>";
+		$message .= "<br/>";
+		if(!empty($tipPhotoUrl))
+		{
+			// if there's a photo attached then include that
+			$message .= "So that's all... wait I almost forgot! They also posted a picture: <img src='".$tipCanonicalUrl."' alt='venue tip picture'/>";
+			$message .= "<br/>";
+			$message .= "<br/>";
+		}
+		$message .= "Love,";
+		$message .= "<br/>";
+		$message .= "<br/>";
+		$message .= "TipsSquare";
+		$message .= "<br/>";
 		
 		return $message;
 	}
