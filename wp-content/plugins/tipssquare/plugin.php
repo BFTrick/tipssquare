@@ -47,14 +47,11 @@ class Tipssquare {
 		add_filter( 'wp_mail_content_type', create_function('', 'return "text/html";') );
 
 		// schedule an event in wp cron to run the main function of the program
-		wp_unschedule_event('check_tips');
 		if( !wp_next_scheduled( 'check_tips' ) ) 
 		{  
 			wp_schedule_event( time(), 'hourly', 'check_tips' );
 		}
-		// add_action( 'check_tips', array( &$this, 'run' ) );
-		$this->run();
-		exit();
+		add_action( 'check_tips', array( &$this, 'run' ) );
 
 		// add functionality for user permissions (capabilities) for the venue custom post type
 		add_filter( 'map_meta_cap', array( &$this, 'my_map_meta_cap' ), 10, 4 );
@@ -285,8 +282,7 @@ class Tipssquare {
 			$tipCreationDate = date('Y-m-d H:i:s', $tip->createdAt);
 
 			// if no post exists add it to the DB & email it!
-			// if(!$tipAlreadyExists)
-			if(true)
+			if(!$tipAlreadyExists)
 			{
 				$newPost = array(
 					'post_content'		=> $tip->text,
