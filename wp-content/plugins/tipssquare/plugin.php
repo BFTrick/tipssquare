@@ -172,11 +172,10 @@ class Tipssquare {
 			$existingTipIds = $this->query_existing_tips();
 
 			// get observers for this venue (the people who want to receive notifications)
-			$observers = $this->query_venue_observers();
+			$observers = $this->query_venue_observers($venueId);
 
 			// check to make sure there is at least one user monitoring this venue
-			// if(!empty($observers))
-			if(true)
+			if(!empty($observers))
 			{
 				$this->add_tips_to_db($tips, $existingTipIds, $observers);
 			}
@@ -274,12 +273,12 @@ class Tipssquare {
 
 
 	// get the venue's observer's (the people that want to receive notifications about this venue)
-	public function query_venue_observers()
+	public function query_venue_observers($venueId)
 	{
 		global $wpdb;
 
 		// Pseudo code for the query:
-		// 	Find the email of the post author of a certain venue
+		//  Find the email of the post author of a certain venue
 		$observers = $wpdb->get_results( 
 			"SELECT user_email, display_name
 			FROM $wpdb->users 
@@ -294,12 +293,15 @@ class Tipssquare {
 			)" 
 		);
 
+		return $observers;
+
 	}
 
 
 	// add venue tips to the database
 	public function add_tips_to_db($tips, $existingTipIds, $observers)
 	{
+
 		// loop through each tip and add it to DB if it isn't already there
 		foreach ($tips as $tipKey => $tip)
 		{
@@ -312,6 +314,15 @@ class Tipssquare {
 			// if no post exists add it to the DB & email it!
 			if(!$tipAlreadyExists)
 			{
+				// send email if the tip was recent
+				if($this->is_recent_tip($tipCreationDate))
+				{
+					$this->send_tip_notification_emails($observers, $tip->text, $tip->canonicalUrl, $tip->photourl);
+
+					$this->ts_notifications_sent++;
+				}
+
+				// add it to the db
 				$newPost = array(
 					'post_content'		=> $tip->text,
 					'post_date'			=> date('Y-m-d H:i:s', $tip->createdAt),
@@ -330,14 +341,6 @@ class Tipssquare {
 				{
 					// only add the photourl if it exists
 					add_post_meta($post_id, "photo_url", $tip->photourl);
-				}
-
-				// send email if the tip was recent
-				if($this->is_recent_tip($tipCreationDate))
-				{
-					$this->send_tip_notification_emails($observers, $tip->text, $tip->canonicalUrl, $tip->photourl);
-
-					$this->ts_notifications_sent++;
 				}
 			}
 		}
@@ -373,11 +376,17 @@ class Tipssquare {
 		// write email content
 		$content = $this->generate_tip_notification_email_content($tipText, $tipCanonicalUrl, $tipPhotoUrl);
 
+		// create an array of observer emails
+		foreach ($observers as $key => $value) 
+		{
+			$observerEmails[] = $value->user_email;
+		}
+
 		// production email
-		// wp_mail($observers, 'Foursquare Tip Notification', $content, $headers);
+		wp_mail($observerEmails, 'Foursquare Tip Notification', $content, $headers);
 
 		// test email
-		wp_mail("bftrick@gmail.com", 'Foursquare Tip Notification', $content);
+		// wp_mail("bftrick@gmail.com", 'Foursquare Tip Notification', $content);
 	}
 
 
