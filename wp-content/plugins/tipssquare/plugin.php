@@ -8,6 +8,9 @@ Author: Patrick Rauland
 Author URI: http://www.patrickrauland.com
 */
 
+global $ts_notifications_sent_option;
+$ts_notifications_sent_option = "ts_notifications_sent";
+
 class Tipssquare {
 
 	// foursquare api variables
@@ -19,6 +22,10 @@ class Tipssquare {
 	private $fsClientId = "UQ1ZQLV4AHI34LGUBXNXFALIS1AY0NYXPIJE1GUFMV1PVRQG";
 	private $fsClientSecret = "FW2FYYNFQZG1AQHFBOTIOUEQPEIDONVY5KZVUORK2QENKNC1";
 
+	// create notification counter
+	private $ts_notifications_sent;
+
+	
 	public function __construct() 
 	{
 		add_action( 'init', array( &$this, 'init' ) );
@@ -61,6 +68,19 @@ class Tipssquare {
 
 		// after this plugin is done loaded leave a hook for other plugins
 		do_action('tipssquare_loaded');
+	}
+
+
+	// when this plugin is activated make sure we have some data in the database
+	static function install() {
+		
+		// get the option name
+		global $ts_notifications_sent_option;
+
+		// create an empty ts_notifications_sent variable
+		// note: If the option already exists in the database this line of code does nothing (meaning that it doesn't override anything)
+		add_option($ts_notifications_sent_option, 0);
+
 	}
 
 
@@ -128,6 +148,8 @@ class Tipssquare {
 	// * sends email notifications
 	public function run()
 	{
+		global $ts_notifications_sent_option;
+
 		// get venues to monitor
 		$venuesToMonitor = $this->query_venues_to_monitor();
 		
@@ -136,6 +158,9 @@ class Tipssquare {
 		{
 			return false;
 		}
+
+		// pull down existing notification counter
+		$this->ts_notifications_sent = (int) get_option($ts_notifications_sent_option);
 		
 		// loop through each venue and process it
 		foreach ($venuesToMonitor as $key => $venueId)
@@ -163,6 +188,9 @@ class Tipssquare {
 			}
 
 		}
+
+		// update notification counter in DB
+		update_option($ts_notifications_sent_option, $this->ts_notifications_sent);
 
 	}
 
@@ -308,6 +336,8 @@ class Tipssquare {
 				if($this->is_recent_tip($tipCreationDate))
 				{
 					$this->send_tip_notification_emails($observers, $tip->text, $tip->canonicalUrl, $tip->photourl);
+
+					$this->ts_notifications_sent++;
 				}
 			}
 		}
@@ -607,5 +637,10 @@ class Tipssquare {
 
 // initialize the plugin
 new Tipssquare();
+
+
+// register a function to run when the plugin is activated
+register_activation_hook( __FILE__, array('Tipssquare', 'install') );
+
 
 // that's all folks!
