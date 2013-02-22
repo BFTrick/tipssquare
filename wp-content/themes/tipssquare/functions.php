@@ -135,7 +135,14 @@ add_action( 'widgets_init', 'tipssquare_widgets_init' );
  */
 function tipssquare_scripts() 
 {
+	// enqueue base style sheets
 	wp_enqueue_style( 'style', get_stylesheet_uri() );
+	wp_enqueue_style( 'ts-style', get_template_directory_uri() . '/assets/css/style.css' );
+
+	// add google fonts
+	wp_enqueue_style( 'gf-bowlby-one-sc', "http://fonts.googleapis.com/css?family=Bowlby+One+SC" );
+	wp_enqueue_style( 'gf-open-sans', "http://fonts.googleapis.com/css?family=Open+Sans" );
+
 	if(!is_front_page())
 	{
 		wp_enqueue_style( 'ts-layout', get_template_directory_uri() . '/assets/css/layouts/content-sidebar.css' );
