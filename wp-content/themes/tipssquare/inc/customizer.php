@@ -25,6 +25,6 @@ add_action( 'customize_register', 'tipssquare_customize_register' );
  * @since tipssquare 1.2
  */
 function tipssquare_customize_preview_js() {
-	wp_enqueue_script( 'tipssquare_customizer', get_template_directory_uri() . '/js/customizer.js', array( 'customize-preview' ), '20120827', true );
+	wp_enqueue_script( 'tipssquare_customizer', get_template_directory_uri() . '/assets/js/customizer.js', array( 'customize-preview' ), '20120827', true );
 }
 add_action( 'customize_preview_init', 'tipssquare_customize_preview_js' );
