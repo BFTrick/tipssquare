@@ -29,7 +29,8 @@ if ( ! function_exists( 'tipssquare_setup' ) ) :
  *
  * @since tipssquare 1.0
  */
-function tipssquare_setup() {
+function tipssquare_setup() 
+{
 
 	/**
 	 * Custom template tags for this theme.
@@ -91,7 +92,8 @@ add_action( 'after_setup_theme', 'tipssquare_setup' );
  *
  * Hooks into the after_setup_theme action.
  */
-function tipssquare_register_custom_background() {
+function tipssquare_register_custom_background() 
+{
 	$args = array(
 		'default-color' => 'ffffff',
 		'default-image' => '',
@@ -115,7 +117,8 @@ add_action( 'after_setup_theme', 'tipssquare_register_custom_background' );
  *
  * @since tipssquare 1.0
  */
-function tipssquare_widgets_init() {
+function tipssquare_widgets_init() 
+{
 	register_sidebar( array(
 		'name' => __( 'Sidebar', 'tipssquare' ),
 		'id' => 'sidebar-1',
@@ -130,17 +133,23 @@ add_action( 'widgets_init', 'tipssquare_widgets_init' );
 /**
  * Enqueue scripts and styles
  */
-function tipssquare_scripts() {
+function tipssquare_scripts() 
+{
 	wp_enqueue_style( 'style', get_stylesheet_uri() );
-	wp_enqueue_style( 'ts-layout', get_template_directory_uri() . '/assets/css/layouts/content-sidebar.css' );
-
+	if(!is_front_page())
+	{
+		wp_enqueue_style( 'ts-layout', get_template_directory_uri() . '/assets/css/layouts/content-sidebar.css' );
+	}
+	
 	wp_enqueue_script( 'small-menu', get_template_directory_uri() . '/assets/js/small-menu.js', array( 'jquery' ), '20120206', true );
 
-	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
+	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) 
+	{
 		wp_enqueue_script( 'comment-reply' );
 	}
 
-	if ( is_singular() && wp_attachment_is_image() ) {
+	if ( is_singular() && wp_attachment_is_image() ) 
+	{
 		wp_enqueue_script( 'keyboard-image-navigation', get_template_directory_uri() . '/assets/js/keyboard-image-navigation.js', array( 'jquery' ), '20120202' );
 	}
 }
