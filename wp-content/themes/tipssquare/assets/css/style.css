@@ -16,6 +16,7 @@ a
 }
 h1, h2, h3, h4, h5, h6
 {
+	color: #fff;
 	font-family: 'Bowlby One SC', cursive;
 	position: relative;
 	text-shadow: 
@@ -29,6 +30,10 @@ h1, h2, h3, h4, h5, h6
 	-ms-transition:     all 0.12s ease-out;
 	-o-transition:      all 0.12s ease-out;
 }
+	h1 a, h1 a:visited, h2 a, h2 a:visited, h3 a, h3 a:visited, h4 a, h4 a:visited, h5 a, h5 a:visited, h6 a, h6 a:visited
+	{
+		color: #fff;
+	}
 	h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover
 	{
 		top: -3px; 
@@ -48,3 +53,68 @@ h1, h2, h3, h4, h5, h6
 		font-size: 36px;
 		font-size: 3.6rem;
 	}
+		h1.site-title span
+		{
+			color: #e0ebbe;
+		}
+.clearfix
+{
+	clear: both;
+}
+#masthead
+{
+	/* http://www.colorzilla.com/gradient-editor/#3cb8e9+0,30b0e2+50,11a9dd+51,18a1d3+100;Custom */
+	background: #3cb8e9; /* Old browsers */
+	background: -moz-linear-gradient(top,  #3cb8e9 0%, #30b0e2 50%, #11a9dd 51%, #18a1d3 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#3cb8e9), color-stop(50%,#30b0e2), color-stop(51%,#11a9dd), color-stop(100%,#18a1d3)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  #3cb8e9 0%,#30b0e2 50%,#11a9dd 51%,#18a1d3 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  #3cb8e9 0%,#30b0e2 50%,#11a9dd 51%,#18a1d3 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  #3cb8e9 0%,#30b0e2 50%,#11a9dd 51%,#18a1d3 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  #3cb8e9 0%,#30b0e2 50%,#11a9dd 51%,#18a1d3 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3cb8e9', endColorstr='#18a1d3',GradientType=0 ); /* IE6-9 */
+	padding: 0 .5em;
+}
+	#masthead hgroup
+	{
+		float: left;
+		width: 50%;
+	}
+		#masthead hgroup h1
+		{
+			padding-top: 1rem;
+		}
+	#masthead .site-navigation
+	{
+		clear: none;
+		float: right;
+		width: 50%;
+	}
+		
+
+
+
+/* =Styles for tablets + small screens
+-------------------------------------------------------------- */
+@media screen and (min-width: 748px) {
+	#masthead .site-navigation .menu
+	{
+		float: right;
+	}
+		#masthead .site-navigation .menu li
+		{}
+			#masthead .site-navigation .menu li a
+			{
+				color: white;
+				display: block;
+				padding: 2.25rem;
+				text-shadow: 1px 1px 3px #333;
+			}
+				#masthead .site-navigation .menu li.current-menu-item a
+				{
+					background-color: rgba(0, 0, 0, 0.1);
+				}
+				#masthead .site-navigation .menu li a:hover
+				{
+					background-color: rgba(255, 255, 255, 0.1);
+				}			
+}
