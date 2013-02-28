@@ -1,4 +1,5 @@
 .htaccess
+wp-config
 wp-config-*
 wp-content/uploads/
 wp-content/blogs.dir/
