@@ -1,0 +1,907 @@
+/* CREAM ALT STYLE */
+
+@import "../css/mixins.less";
+
+// VARIABLES
+// Colors
+@color_links: #de1e1e; // Links / Main theme colour 
+@color_body: #282828; // Body Copy
+@color_secondary: #2293e2;
+// Borders
+@border_main: #eae2a9; // The 1px grey rules used throughout the WF
+// Backgrounds
+@bg_light: #fbfaf6;
+@bg_dark: #d3d3d3;
+// Alerts
+@success: #89b93f;
+@info:#3c8bae;
+@error:#c84e45;
+// Fonts
+@sans: sans-serif;
+@serif: Georgia, serif; 
+// Google fonts - These are also defined in Theme Setup (theme-actions.php)
+@font_headings: "Arvo", sans-serif;
+@font_body: "Cabin", sans-serif;
+// Paths
+@imagepath: '../images';
+@fontpath: '../includes/fonts/';
+
+
+
+/* Defaults */
+body  { 
+	color: @color_body;
+	font-family: @font_body;
+	background: #fffdef;
+}
+hr { background-color: @border_main; }
+
+/* Hyperlinks */
+a { 
+	color: @color_links; 
+	&:hover {
+		color: @color_links - #222;
+	}
+	
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6  {
+	font-family: @font_headings; 
+	color: @color_body; 
+}
+
+/* Tables */
+table {
+    border:1px solid @border_main;
+    background: @bg_light;
+    td,th {
+      border-right:1px dotted @border_main;
+    }
+    thead {
+      th {
+        font-family:  @font_headings;
+        color: lighten(@color_body, 25%);
+        background: #fff;
+        border-right:1px dotted @bg_light - #111;
+        border-bottom:2px solid @border_main;
+      }
+    }
+    tbody {
+      th {
+      	background: #fff;
+      	border-bottom:1px solid @border_main;
+      }
+      tr:nth-child(2n) {
+        td {
+        	background: #fff;
+          border-right:1px dotted @bg_light - #111;
+        }
+      }
+      td {
+        border-bottom:1px solid @border_main;
+      }
+    }
+    tfoot  {
+    	tr:first-child  {
+    		th,td  {
+    			border-top: 1px solid @border_main;
+    		}
+    	}
+    	th,td  {
+    		background: #fff;
+    	}
+    }
+}
+
+
+/* Navigation */
+ul.nav { // Styles applied to all instances of navigation
+	li {
+		a {
+			color: lighten(@color_body, 15%);
+			&:hover  {
+				border-left-color: @border_main;
+				color: @color_body;
+			}
+		}
+		&.current_page_item, &.current_page_parent, &.current-menu-ancestor, &.current-cat, &.li.current-menu-item {
+			a { 
+				border-left: 5px solid @color_secondary;
+				color: @color_body;
+			}
+			ul  {
+				li  {
+					a  {
+						color: lighten(@color_body, 15%);
+						&:hover  {
+							color: @color_body;
+						}
+					}
+				}
+			}
+		}
+		ul  {
+			li  {
+				&.current_page_item, &.current_page_parent, &.current-menu-ancestor, &.current-cat, &.li.current-menu-item {
+				    a { 
+				    	color: @color_body!important;
+				    }
+				}
+			}
+		}
+	}
+}
+	
+/* Header */
+#header {
+	border-bottom: 5px solid #000;
+	#logo {
+		border-top: 5px solid @color_links;
+	}
+	.site-title  {
+		border-top: 5px solid @color_links;
+	}
+	.site-title, .site-description {
+	    color:#000;
+	    a {
+	    	color: darken(@color_body, 20%);
+	    }
+	}
+	.nav-toggle {
+		background: @color_secondary;
+		color: #fff!important;
+		a {
+			color: #fff!important;
+		}		
+	}
+	.site-description { 
+		color: lighten(@color_body, 10%); 
+	}
+}
+
+/* Homepage Components */
+.home-section  {
+	> header  {
+		h1  {
+			border-bottom: 5px solid @border_main;
+		}
+	}
+	&#intro-message  {
+		border-bottom: 5px solid @border_main;
+		header  {
+			h1  {
+				color: darken(@color_body, 20%);
+			}
+		}
+	}
+	&#blog-posts  {
+		ul  {
+			li  {
+				h3  {
+					a  {
+						color: darken(@color_body, 10%);
+					}
+				}
+			}
+		}
+	}
+	&#promotion  {
+		background: @bg_light;
+	}
+}
+
+.home #main .widget {
+	h2, > h3, #connect h3  {
+		border-bottom: 5px solid @border_main;
+	}
+}
+
+#sidebar, #footer-widgets  {
+	.widget_woothemes_features  {
+		.feature  {
+			border-bottom: 1px solid @border_main;
+		}
+	}
+	.widget_woothemes_testimonials  {
+		.quote  {
+			border-bottom: 1px solid @border_main;
+		}
+	}
+}
+
+.widget_woothemes_features  {
+	.feature  {
+	    h3  {
+	    	a  {
+	    		color: darken(@color_body, 10%);
+	    	}
+	    }
+	}
+}
+
+.widget_woothemes_testimonials  {
+	.quote  {
+	    &:before  {
+	    	background: #000;
+	    	color: #fff;
+	    }
+	    h3  {
+	    	a  {
+	    		color: darken(@color_body, 10%);
+	    	}
+	    }
+	    a.avatar-link  {
+	    	img  {
+	    		.box_shadow(0,0,0,3px,@border_main);
+	    	}
+	    	&:before  {
+	    		border-color: transparent transparent @border_main transparent;
+	    	}
+	    }
+	    .author  {
+	    	font-family: @font_headings;
+	    	.url  {
+	    		font-family: @font_body;
+	    		a  {
+	    			color: lighten(@color_body, 20%);
+	    		}
+	    	}
+	    }
+	}
+}
+
+/* Footer */
+#footer{
+	border-top: 5px solid #000;
+	color: lighten(@color_body, 10%);
+	font-family: @font_headings;
+	a  {
+		color:@color_body;
+	}
+}
+
+#footer-widgets {
+	border-top: 5px solid @border_main;
+}
+
+/* Breadcrumbs */
+#breadcrumbs { 
+	.woo-breadcrumbs  {
+		background: @border_main;
+		a  {
+			color: @color_body;
+		}
+	}
+}
+
+/* Posts */
+.archive-header {
+	border-bottom: 5px solid @border_main;
+}
+.post, .search-results .type-page, .search-results .type-feature, .search-results .type-product  {
+	border-bottom: 5px solid @border_main;
+}
+.post, .type-page, .type-feature, .search-results .type-product {
+	header h1 {
+		a:link, a:visited { 
+			color: darken(@color_body, 20%);
+		}
+	}
+	.post-meta {
+		color: lighten(@color_body, 40%);
+		a  {
+			color: lighten(@color_body, 40%);
+		}
+	}
+	.post-more { 
+		.comments {
+			a, span {
+				font-family: @font_headings;
+				background: @color_links;
+				border: 2px solid darken(@color_links, 20%);
+				color: #fff!important;
+				&:hover  {
+					background: darken(@color_links, 10%);
+				}
+				&:after  {
+					border-color:  darken(@color_links, 20%) transparent transparent transparent;
+				}
+			}
+		}
+	}
+	p.tags {
+		a  {
+			color: @color_body;
+		}
+	}
+	.entry {
+		blockquote  {
+			&:before  {
+				font-family: @serif;
+			}
+		}
+	}
+	
+	/* Images */
+	img, img.thumbnail {
+		&:hover { 
+			border-color: darken(@border_main, 10%);
+		}
+	}
+	.wp-caption {
+		background: @bg_light;
+		border: 1px solid @border_main;
+	}
+}
+
+
+/* Pagination / WP-Pagenavi / Woo-Pagination */
+.nav-entries, #post-entries {
+	span.nav-prev, span.nav-next, div.nav-prev a, div.nav-next a {
+		color: @color_body;
+		background: @border_main;
+		&:hover {
+			background: @color_links;
+		}
+	}
+}
+.woo-pagination {
+	.page-numbers {
+		color: lighten(@color_body, 20%);
+		&:hover { 
+			color: @color_body;
+		}
+		&.current  { 
+			background: @color_links; 
+			color: #fff; 
+		}
+	}
+}
+
+/* Single Post Author */
+#post-author { 
+	border-bottom: 5px solid @border_main;
+}
+
+/* Connect */
+#connect { 
+	background: @bg_light; 
+	.related-posts {
+		border-left:1px solid @border_main;
+	}
+}
+
+/* Generic Widgets */
+.widget  { 
+	color: lighten(@color_body, 20%);
+	ul {
+		li {
+			a {
+				color: lighten(@color_body, 20%);
+			}
+		}
+	}
+}
+
+/* Specific Widgets */
+#searchform  { 
+	border-color: darken(@border_main, 8%) @border_main @border_main darken(@border_main, 8%); 
+	.s, #s { color: @color_body; }
+}
+
+/* Flickr */
+.widget_woo_flickr {
+	a {
+		&:hover {
+			img { 
+				border-color: darken(@border_main, 10%); 
+			}
+		}
+	}
+}
+
+/* Calendar */
+#wp-calendar{
+	th, td { 
+		background: darken(@bg_light, 10%); 
+	}
+	td { 
+		color: lighten(@color_body, 10%); 
+	}
+}
+
+
+/* Twitter */
+.widget_woodojo_tweets {
+	ul { 
+		background: #fff;
+		li {
+			border-bottom:1px solid @border_main;
+			.time { 
+				color: lighten(@color_body, 10%); 
+			}
+		}
+	}
+	p {
+		color: lighten(@color_body, 10%);
+		a { color: darken(@color_body, 20%); }
+	}
+}
+
+/* WooTabs */
+.widget_woodojo_tabs, .woocommerce_tabs { 
+	border-bottom: 5px solid @border_main;
+	ul.nav-tabs, ul.tabs {
+		border-bottom: 5px solid @border_main;
+		.clearfix;
+		li {
+			font-family: @font_headings;
+			a {
+				color: lighten(@color_body, 40%);
+				&:hover {
+					color: lighten(@color_body, 20%);
+				}
+			}
+			&.active {
+				a {
+					background: #fff;
+					color: @color_body;
+					&:after {
+						background: @color_body;
+					}
+				}
+			}
+		}
+	}
+}
+
+/* Comments */
+#comments {
+	.comment { 
+		&.bypostauthor { 
+			.comment-container  {
+				border-left: 5px solid @color_links; 
+			}
+			.gravatar {
+				img { 
+					.box_shadow(0,0,0,5px,@color_links);
+				}
+			}
+		}
+		.comment-container { 
+			background: @bg_light;
+			border-left: 5px solid @border_main;
+		}
+		.comment-head {
+			color: lighten(@color_body, 30%);
+			.name { 
+				font-family: @font_headings;
+				color: @color_body;
+			}
+		}
+		.reply {
+			a {
+				background: darken(@bg_light, 2%);
+				border-color: darken(@border_main, 7%);
+				color: @color_body!important;
+				&:hover { 
+					background: @border_main; 
+				}
+			}
+		}
+	}
+}
+
+/* Comments Form */
+#respond  {
+	h3#reply-title  {
+		border-bottom: 5px solid @border_main;
+		small  {
+			font-family: @font_body;
+		}
+	}
+	#commentform  {	
+		label { 
+			color: lighten(@color_body, 40%);
+			font-family: @font_headings;
+		}
+	}
+}
+
+/* Timeline Page Template */
+#archives { 
+	.archives_list {
+		border-left:1px solid @border_main;
+		&:last-child:after  { border: 4px solid @border_main; background: @bg_dark; }
+		.date {
+			color: lighten(@color_body, 10%);
+			&:before  { border-top: 2px solid @border_main; }
+		}
+		.comments {
+			a  { 
+				background: @color_secondary; color: #fff;
+				&:after  { border:.3em solid @color_links; border-color: transparent  @color_secondary transparent transparent; }
+			}
+		}
+	}
+}
+h3.archive_year { background: @bg_light; color: @color_body; border: 1px solid @border_main; }
+
+/* Contact Form */
+#contact-page {
+	#single_map_canvas  {
+		color: @color_body!important;
+	}
+} 
+.page-template-template-contact-php {
+	.location-twitter  {
+		border-bottom: 1px solid @border_main;
+	    .contact-social  {
+	    	#twitter { 
+	    	    ul {
+	    	    	li {
+	    	    		a.time { 
+	    	    			color: lighten(@color_body, 15%); 
+	    	    		}
+	    	    	}
+	    	    }
+	    	}
+	    	#connect  {
+	    		border-top: 1px solid @border_main;
+	    	}
+	    }
+	}
+}
+
+/* Image Gallery */
+.image-gallery-item img {
+	border:1px solid darken(@bg_light,10%); 
+	background:@bg_light; 
+	&:hover { 
+		border: 1px solid darken(@bg_light,20%); 
+	}
+}
+
+/* FlexSlider */
+.flex-direction-nav  {
+	a {
+		&:before  {
+			background: @color_body;
+		}
+	}
+}
+
+@media screen and (min-width: 1150px) {
+	.flex-direction-nav  {
+		a {
+			&:before  {
+				color: @color_body;
+				background: none;
+			}
+		}
+	}
+}
+
+/* Forms */
+input[type=text], input.input-text, textarea, input.txt, input[type=tel], input[type=email] {
+	border: 1px solid @border_main;
+}
+
+/* Buttons (Includes WF chortcode buttons) */
+a.button, 
+a.comment-reply-link, 
+#commentform #submit,
+.submit,
+input[type=submit],
+input.button,
+button.button,
+#wrapper .woo-sc-button {
+	background: @color_links;
+	
+	&:hover {
+		background: darken(@color_links, 4%);	
+	}
+	&.alt  {
+		background: @color_secondary;
+		&:hover { 
+	    	background: darken(@color_secondary, 10%);
+		}
+	}
+}
+
+/* Shortcode info boxes */
+p.woo-sc-box, div.woo-sc-box {
+	color: darken(@color_body, 15%);
+	&.info {
+		border-color: @border_main;
+		background-color: @bg_light;
+	}
+	&.normal {
+		border-color: @border_main;
+		background-color: @bg_light;
+	}
+}
+
+/* LAYOUT */
+
+@media only screen and (min-width: 768px) {
+	
+	/* 	Navigation */
+	#navigation  {	
+	    ul.nav {
+	    	> li {
+	    		> a {
+	    			&:hover {
+	    				border-top-color: @border_main;
+	    			}
+	    		}
+	    		&:hover {
+	    		}
+	    		&.current_page_item, &.current_page_parent, &.current-menu-ancestor, &.current-cat, &.li.current-menu-item {
+					a { 
+						border-top: 5px solid @color_secondary;
+					}
+				}
+	    	}
+	    	ul {
+	    		background: #fff;
+	    		border-top: 3px solid @color_secondary;
+	    		border-bottom: 3px solid @color_secondary;
+	    		li {
+	    			border-bottom: 1px solid @border_main;
+	    		}			
+	    	}
+	    }
+	    
+	}
+	
+	/* Slider */
+	.flexslider  {
+		.has-slide-background  {
+			.slide-content {
+				h1, h2  {
+					color: #fff;
+				}
+			}
+		}
+	}
+	
+}
+
+/* WOOCOMMERCE */
+
+// General WooCommerce
+.star-rating {
+	background: @border_main;
+	span {
+		background: @color_links;
+	}
+}
+
+p.stars {
+	span {
+		background: @border_main;
+		a:hover, a:focus {
+			background: @color_links;
+		}
+		a.active {
+			background: @color_links;
+		}
+	}
+}
+
+
+// Widgets
+.widget .product_list_widget {
+	li {
+		border-bottom: 1px dotted @border_main;
+	}
+}
+
+
+.widget_layered_nav {
+	ul {
+		li {
+			&.chosen {
+				a {
+					background: @color_links;
+					color: #fff;
+				}
+			}
+		}
+	}
+}
+
+
+
+.widget_price_filter {
+   .ui-slider .ui-slider-handle { 
+		border:1px solid @color_links;
+	}
+   .ui-slider .ui-slider-range { 
+		background: @color_links;
+	}
+   .price_slider_wrapper .ui-widget-content { 
+		background: @border_main;
+	}
+}
+
+// Messages / notifications
+.woocommerce_message, .woocommerce_info, .woocommerce_error {
+	border-bottom: 5px solid @border_main;
+	color: @color_links;
+	.button {
+		background: @border_main;
+		color: lighten(@color_body, 30%);
+		&:hover  {
+			background: darken(@border_main, 5%);
+		}
+	}
+}
+.woocommerce_message {
+	&:before {
+		color: @success;
+	}
+}
+.woocommerce_info {
+	&:before {
+		color: @info;
+	}
+}
+.woocommerce_error {
+	&:before {
+		color: @error;
+	}
+}
+
+.stock.out-of-stock {
+	&:before {
+		color: @error;
+	}
+}
+.stock.in-stock {
+	&:before {
+		color: @success;
+	}
+}
+
+// Products 
+.onsale {
+	background: @color_links;
+	font-family: @font_headings;
+	color: #fff;
+	border: 3px solid #fff;
+}
+.quantity {
+	.qty {
+		border: 3px solid @border_main;
+	}
+	.plus, .minus {
+		background: @color_secondary;
+	}
+	.plus {
+		&:hover  {
+			background: darken(@color_secondary, 5%);
+		}
+	}
+	.minus {
+		background: darken(@color_secondary, 10%);
+		&:hover  {
+			background: darken(@color_secondary, 15%);
+		}
+	}
+}
+ul.products {
+	li.product  {
+	    h3  {
+	    	a {
+	    		color: darken(@color_body, 10%);
+	    	}
+	    }
+	    .product-details  {
+	    	.price  {
+	    		background: @color_secondary;
+	    		border: 5px solid darken(@color_secondary, 10%);
+	    		color: #fff;
+	    	}
+	    }
+	}
+}
+
+// Single product
+.single-product {
+	.single_variation_wrap  {
+		.single_variation  {
+			.price  {
+				color: darken(@color_body, 20%);
+			}
+		}
+	}
+	.images {
+		img {
+			.box_shadow(0,0,0,5px,@border_main);
+		}
+	}
+	.summary  {
+		.price  {
+	    	color: lighten(@color_body, 40%);
+		}
+		.product_meta  {
+			color: lighten(@color_body, 30%);
+			a  {
+				color: lighten(@color_body, 20%);
+			}
+		}
+	}
+	.woocommerce_tabs  {
+		.panel  {
+			border: 5px solid @border_main;
+			border-width: 0 5px 5px;
+		}
+	}
+}
+
+// My Account
+.order_details {
+	border:1px solid @border_main;
+	li {
+		border-right:1px solid @border_main;
+		color: @color_body + #555;
+		strong {
+			color: @color_body;
+		}
+	}
+}
+ul.digital-downloads {
+	li {
+		border-bottom:1px solid @border_main;
+	}
+}
+
+// Cart
+table.cart {
+	td.product-remove  {
+		a  {
+			background: @color_secondary;
+			&:hover  {
+				background: darken(@color_secondary, 10%);
+			}
+		}
+	}
+	td.product-thumbnail  {
+		img  {
+			.box_shadow(0,0,0,2px,@border_main);
+		}
+	}
+	td.product-name  {
+		a  {
+			font-family: @font_headings;
+			color: @color_body;
+		}
+	}
+}
+
+// Product Reviews
+#reviews  {
+	.comment  {
+		.meta  {
+			color: lighten(@color_body, 20%);
+		}
+	}
+}
+
+// Checkout
+#payment {
+	border:1px solid @border_main;
+	.payment_methods {
+		border-bottom:1px solid @border_main;
+		li {
+			border-bottom:1px solid @border_main;
+			.payment_box {
+				.vertical_gradient(@bg_light, @bg_light - #040404);
+				border-top:1px solid @border_main;
+			}
+		}
+	}
+}

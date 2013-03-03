@@ -1,0 +1,419 @@
+/*
+The styles in this stylesheet only apply to resolutions 768px and up
+
+CALCULATING DIMENSIONS:
+----------------------
+The layout is fluid. The sote wrapper (.col-full) has a fixed pixel max-width.
+All subsequent dimensions are calculated based on that fixed pixel width, using the formula: target / context = result
+Credit - http://www.alistapart.com/articles/fluidgrids/
+
+-----
+INDEX
+-----
+
+1. Global dropdown styles
+2. Top Navigation
+3. Main navigation dropdown menus
+ -3.1 General dropdown menus
+4. Containers & Columns
+5. Footer widgets
+6. IE Fixes
+
+/*----------------------*/
+@-webkit-keyframes spin-360 {
+  from {
+    -webkit-transform: rotate(0);
+    /* Saf3.1+, Chrome */
+  
+    -moz-transform: rotate(0);
+    /* FF3.5+ */
+  
+    -ms-transform: rotate(0);
+    /* IE9 */
+  
+    -o-transform: rotate(0);
+    /* Opera 10.5 */
+    transform: rotate(0);
+    zoom: 1;
+  }
+  50% {
+    -webkit-transform: rotate(180deg);
+    /* Saf3.1+, Chrome */
+  
+    -moz-transform: rotate(180deg);
+    /* FF3.5+ */
+  
+    -ms-transform: rotate(180deg);
+    /* IE9 */
+  
+    -o-transform: rotate(180deg);
+    /* Opera 10.5 */
+    transform: rotate(180deg);
+    zoom: 1;
+  }
+  to {
+    -webkit-transform: rotate(0);
+    /* Saf3.1+, Chrome */
+  
+    -moz-transform: rotate(0);
+    /* FF3.5+ */
+  
+    -ms-transform: rotate(0);
+    /* IE9 */
+  
+    -o-transform: rotate(0);
+    /* Opera 10.5 */
+    transform: rotate(0);
+    zoom: 1;
+  }
+}
+/*----------------------*/
+@media only screen and (min-width: 768px) {
+  iframe object,
+  embed {
+    max-width: 100%;
+    width: 100%;
+    border: 1px solid red!important;
+  }
+  /* 1. GLOBAL DROPDOWN STYLES (these are purely for the dropdown layout and you should only edit the width of the dropdowns) */
+  ul.nav {
+    position: relative;
+    margin-bottom: 0;
+    /* LEVEL 2 */
+  
+    /* LEVEL 3 */
+  
+  }
+  ul.nav li {
+    position: relative;
+    float: left;
+    zoom: 1;
+    margin-bottom: 0;
+    list-style: none;
+  }
+  ul.nav li a {
+    display: block;
+    padding: .53em 1em;
+    border-left: none!important;
+  }
+  ul.nav ul {
+    width: 11.089em;
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 9999;
+    margin: 0;
+  }
+  ul.nav ul li {
+    float: none;
+  }
+  ul.nav ul li a {
+    width: 100%;
+    display: inline-block;
+    -webkit-box-sizing: border-box;
+    /* Safari/Chrome, other WebKit */
+  
+    -moz-box-sizing: border-box;
+    /* Firefox, other Gecko */
+  
+    box-sizing: border-box;
+    /* Opera/IE 8+ */
+  
+  }
+  ul.nav ul ul {
+    left: 100%;
+    top: 0;
+  }
+  ul.nav li:hover > ul {
+    visibility: visible;
+  }
+  /* 2. TOP NAVIGATION (Add top navigation presentational styles here) */
+  #top {
+    background: #000;
+    margin: 0 -1.618em;
+    padding: 0 1.618em;
+  }
+  #top #top-nav {
+    display: block;
+  }
+  #top ul.nav {
+    font-size: .857em;
+    /* LEVEL 2 */
+  
+    /* LEVEL 3 */
+  
+  }
+  #top ul.nav > li a {
+    color: #fff;
+  }
+  #top ul.nav > li a:hover {
+    background: #555;
+  }
+  #top ul.nav > li:hover {
+    background: #555;
+  }
+  #top ul.nav > li.current_page_item a,
+  #top ul.nav > li.current_page_parent a,
+  #top ul.nav > li.current-menu-ancestor a,
+  #top ul.nav > li.current-cat a,
+  #top ul.nav > li.li.current-menu-item a {
+    color: #000;
+  }
+  #top ul.nav ul {
+    background: #555;
+  }
+  #top ul.nav ul li a {
+    color: #fff!important;
+  }
+  /* 3. MAIN NAVIGATION DROPDOWN MENUS (Add main navigation presentational styles here) */
+  #navigation {
+    display: block !important;
+    margin: 0;
+    float: right;
+    clear: none;
+  }
+  #navigation ul.nav {
+    /* LEVEL 2 */
+  
+    /* LEVEL 3 */
+  
+  }
+  #navigation ul.nav > li {
+    margin-left: .53em;
+  }
+  #navigation ul.nav > li > a {
+    padding: 4.236em 1.618em;
+    border-top: 5px solid transparent;
+  }
+  #navigation ul.nav > li > a:hover {
+    border-top-color: #e5e5e5;
+  }
+  #navigation ul.nav > li.current_page_item a,
+  #navigation ul.nav > li.current_page_parent a,
+  #navigation ul.nav > li.current-menu-ancestor a,
+  #navigation ul.nav > li.current-cat a,
+  #navigation ul.nav > li.li.current-menu-item a {
+    border-top: 5px solid #de1e1e;
+  }
+  #navigation ul.nav ul {
+    background: #fff;
+    margin-top: -20px;
+    border-top: 3px solid #de1e1e;
+    border-bottom: 3px solid #de1e1e;
+    left: -1px;
+  }
+  #navigation ul.nav ul li {
+    border-bottom: 1px solid #e5e5e5;
+  }
+  #navigation ul.nav ul li a {
+    border-top: none!important;
+  }
+  #navigation ul.nav ul ul {
+    top: 1.2em;
+    left: 100%;
+  }
+  .nav-toggle {
+    display: none;
+  }
+  /* 4. CONTAINERS & COLUMNS */
+  #header {
+    text-align: left;
+    padding: 0;
+  }
+  #header #logo {
+    float: left;
+    display: block;
+    padding: 4.236em 1em;
+  }
+  #header hgroup {
+    float: left;
+  }
+  #header hgroup h1,
+  #header hgroup h2 {
+    text-align: left!important;
+  }
+  #header ul.rss {
+    margin-right: 0;
+    padding-right: 0;
+  }
+  #header ul.rss li {
+    border-right: 0;
+  }
+  #main.fullwidth,
+  .layout-full #main,
+  .col-full {
+    max-width: 75.998em;
+    width: 100%;
+    margin: 0 auto;
+  }
+  #main {
+    width: 60%;
+  }
+  #sidebar {
+    margin-top: 0;
+    width: 32%;
+  }
+  .entry img {
+    max-width: 100%;
+  }
+  .layout-full .entry img {
+    max-width: 100%;
+  }
+  .layout-right-content #main {
+    float: right;
+  }
+  .layout-right-content #sidebar {
+    float: left;
+  }
+  .layout-full #main {
+    width: 100%;
+  }
+  .col-left {
+    float: left;
+  }
+  .col-right {
+    float: right;
+  }
+  /* 	Homepage */
+  .home-section#intro-message header h1 {
+    font-size: 5.847em;
+  }
+  .home-section#intro-message p {
+    font-size: 1.2em;
+  }
+  .home-section#intro-message .button {
+    font-size: 1.387em;
+    padding: 1em 3.631em;
+  }
+  .home-section#blog-posts ul li {
+    width: 31.3%;
+    margin-right: 3%;
+    clear: none;
+  }
+  .home-section#blog-posts ul li:nth-child(2n) {
+    float: left;
+  }
+  .home-section#blog-posts ul li.first {
+    clear: both;
+  }
+  .home-section#blog-posts ul li.last {
+    margin-right: 0;
+  }
+  .home-section#promotion .left-section {
+    float: left;
+  }
+  .home-section#promotion .right-section {
+    float: right;
+  }
+  .widget_woothemes_features .feature {
+    width: 31.3%;
+    margin-right: 3%;
+    clear: none;
+  }
+  .widget_woothemes_features .feature:nth-child(2n) {
+    float: left;
+  }
+  .widget_woothemes_features .feature.first {
+    clear: both;
+  }
+  .widget_woothemes_features .feature.last {
+    margin-right: 0;
+  }
+  .widget_woothemes_testimonials .quote {
+    width: 31.3%;
+    margin-right: 3%;
+    clear: none;
+  }
+  .widget_woothemes_testimonials .quote:nth-child(2n) {
+    float: left;
+  }
+  .widget_woothemes_testimonials .quote.first {
+    clear: both;
+  }
+  .widget_woothemes_testimonials .quote.last {
+    margin-right: 0;
+  }
+  .page-template-template-contact-php .location-twitter .col-left {
+    float: left;
+  }
+  .page-template-template-contact-php .location-twitter #office-location {
+    width: 48%;
+    margin: 0;
+  }
+  .page-template-template-contact-php .location-twitter .contact-social {
+    float: right;
+    width: 48%;
+  }
+  .page-template-template-contact-php .location-twitter .contact-social #twitter {
+    margin: 0;
+  }
+  /* Slider */
+  .flexslider .has-image .slide-content {
+    float: left;
+    width: 45%;
+  }
+  .flexslider .has-image .slide-media {
+    float: right;
+    width: 45%;
+  }
+  .flexslider .has-slide-background .slide-content {
+    position: absolute;
+    left: 1.618em;
+    bottom: 1.618em;
+    right: 1.618em;
+  }
+  .flexslider .has-slide-background .slide-content h1,
+  .flexslider .has-slide-background .slide-content h2 {
+    color: #fff;
+  }
+  #post-entries .fl {
+    float: left;
+    margin: 0;
+  }
+  #post-entries .fr {
+    float: right;
+  }
+  #comments .gravatar {
+    margin: -2em -4em 1em 2em !important;
+  }
+  /* 5. FOOTER WIDGETS */
+  #footer-widgets .block {
+    margin-right: 3.8%;
+    float: left;
+  }
+  #footer-widgets.col-1 .block {
+    width: 100%;
+    float: none;
+  }
+  #footer-widgets.col-1 .footer-widget-1 {
+    margin-right: 0;
+  }
+  #footer-widgets.col-2 .block {
+    width: 48%;
+  }
+  #footer-widgets.col-2 .footer-widget-2 {
+    margin-right: 0;
+  }
+  #footer-widgets.col-3 .block {
+    width: 30.75%;
+  }
+  #footer-widgets.col-3 .footer-widget-3 {
+    margin-right: 0;
+  }
+  #footer-widgets.col-4 .block {
+    width: 22.05%;
+  }
+  #footer-widgets.col-4 .footer-widget-4 {
+    margin-right: 0;
+  }
+  /* 6. IE FIXES */
+  .ie7 #top-nav {
+    position: relative;
+    z-index: 9999999;
+  }
+  .ie7 #header {
+    position: relative;
+    z-index: 9999999;
+  }
+}

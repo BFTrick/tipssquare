@@ -1,0 +1,431 @@
+/*
+The styles in this stylesheet only apply to resolutions 768px and up
+
+CALCULATING DIMENSIONS:
+----------------------
+The layout is fluid. The sote wrapper (.col-full) has a fixed pixel max-width.
+All subsequent dimensions are calculated based on that fixed pixel width, using the formula: target / context = result
+Credit - http://www.alistapart.com/articles/fluidgrids/
+
+-----
+INDEX
+-----
+
+1. Global dropdown styles
+2. Top Navigation
+3. Main navigation dropdown menus
+ -3.1 General dropdown menus
+4. Containers & Columns
+5. Footer widgets
+6. IE Fixes
+
+/*----------------------*/
+
+@import "mixins";
+
+/*----------------------*/
+
+@media only screen and (min-width: 768px) {
+
+	iframe object, embed  {
+		max-width: 100%;
+		width: 100%;
+		border: 1px solid red!important;
+	}
+
+	/* 1. GLOBAL DROPDOWN STYLES (these are purely for the dropdown layout and you should only edit the width of the dropdowns) */
+	ul.nav {
+	    position: relative;
+	    margin-bottom:0;
+	    li {
+	    	position: relative;
+	    	float: left;
+	    	zoom:1;
+	    	margin-bottom: 0;
+	    	list-style: none;
+	    	a {
+	    		display: block;
+	    		padding:.53em 1em;
+	    		border-left: none!important;
+	    	}
+	    	&.parent { // Styles applied to all parent list items
+	    	}
+	    }
+	    /* LEVEL 2 */
+	    ul {
+	    	width:11.089em;
+	    	visibility: hidden;
+	    	position: absolute;
+	    	top:100%;
+	    	left: 0;
+	    	z-index: 9999;
+	    	margin:0;
+	    	li {
+	    		float: none;
+	    		a {
+	    			width: 100%;
+	    			display: inline-block;
+	    			.borderbox();
+	    		}
+	    		&.parent { // Styles applied to parent items in level 2
+	    		}
+	    	}			
+	    }
+	    /* LEVEL 3 */
+	    ul ul {
+	    	left:100%;
+	    	top:0;
+	    	li {
+	    		&.parent { // Styles applied to parent items in level 3
+	    		}
+	    	}
+	    }
+	    li:hover > ul {
+	    	visibility: visible;
+	    }
+	}
+	    	
+	/* 2. TOP NAVIGATION (Add top navigation presentational styles here) */
+	#top {
+	    background: #000;
+	    margin: 0 -1.618em;
+	    padding:0 1.618em;
+	    #top-nav { 
+	    	display: block; 
+	    }
+	    ul.nav {
+	    	font-size:.857em; // this adjusts the scale of the entire navigation and everything just works like magic
+	    	> li { // The following styles are applied ONLY to the top level list items
+	    		a {
+	    			color: #fff;
+	    			&:hover {
+	    				background: #555;
+	    			}
+	    		}
+	    		&:hover {
+	    			background: #555;
+	    		}
+	    		&.current_page_item, &.current_page_parent, &.current-menu-ancestor, &.current-cat, &.li.current-menu-item {
+					a { 
+						color: #000;
+					}
+				}
+	    	}
+	    	/* LEVEL 2 */
+	    	ul {
+	    		background: #555;
+	    		li {
+	    			a {
+	    				color: #fff!important;
+	    			}
+	    		}			
+	    	}
+	    	/* LEVEL 3 */
+	    	ul ul {
+	    	}
+	    	li:hover > ul {
+	    	}
+	    }
+	}
+	
+	/* 3. MAIN NAVIGATION DROPDOWN MENUS (Add main navigation presentational styles here) */
+	#navigation  {	
+	    display:block !important;
+	    margin: 0;
+	    float: right;
+	    clear: none;
+	    ul.nav {
+	    	> li { // The following styles are applied ONLY to the top level list items
+	    		margin-left: .53em;
+	    		> a {
+	    			padding: 4.236em 1.618em;
+	    			border-top: 5px solid transparent;
+	    			&:hover {
+	    				border-top-color: @border_main;
+	    			}
+	    		}
+	    		&:hover {
+	    		}
+	    		&.current_page_item, &.current_page_parent, &.current-menu-ancestor, &.current-cat, &.li.current-menu-item {
+					a { 
+						border-top: 5px solid @color_secondary;
+					}
+				}
+	    	}
+	    	/* LEVEL 2 */
+	    	ul {
+	    		background: #fff;
+	    		margin-top: -20px;
+	    		border-top: 3px solid @color_secondary;
+	    		border-bottom: 3px solid @color_secondary;
+	    		left:-1px; // -1px left to offset the border and keep everything lined up
+	    		li {
+	    			border-bottom: 1px solid @border_main;
+	    			a {
+	    				border-top: none!important;
+	    			}
+	    		}			
+	    	}
+	    	/* LEVEL 3 */
+	    	ul ul {
+	    		top:1.2em;  // -1px top to offset the border and keep everything lined up
+	    		left:100%; // reapply left 100% as we're offsetting the first child by 1px
+	    	}
+	    	li:hover > ul {
+	    	}
+	    }
+	    
+	}
+	// Hide the nav toggle link in desktop orientation
+	.nav-toggle { display: none; }
+	
+	/* 4. CONTAINERS & COLUMNS */
+	#wrapper  {
+	}
+	#header {
+		text-align: left;
+		padding: 0;
+		#logo  {
+			float: left;
+			display: block;
+			padding: 4.236em 1em;
+		}
+	    hgroup { 
+	        float: left; 
+	        h1, h2 {
+	            text-align: left!important;
+	        }
+	    }
+	    ul.rss {
+	        margin-right:0;
+	        padding-right:0;
+	        li {
+	            border-right:0;
+	        }
+	    }
+	    ul.cart {
+	        li {
+
+	        }
+	    }
+	}
+	#main.fullwidth, .layout-full #main, .col-full { 
+	    max-width:75.998em; 
+	    width: 100%;
+	    margin:0 auto;
+	}
+	#main { 
+	    width: 60%; // golden ratio
+	} 
+	#sidebar { 
+	    margin-top: 0; 
+	    width: 32%;  // golden ratio 
+	}
+	.entry img { 
+	    max-width: 100%; 
+	}
+	.layout-full .entry img { 
+	    max-width: 100%; 
+	}
+	.layout-right-content {
+	    #main  { 
+	    	float: right; 
+	    }
+	    #sidebar  { 
+	    	float: left; 
+	    }
+	}
+	.layout-full #main  { 
+	    width: 100%; // full-width template
+	}
+	.col-left { 
+	    float: left; 
+	}
+	.col-right { 
+	    float: right; 
+	}
+	/* 	Homepage */
+	.home-section  {
+		&#intro-message  {
+			header  {
+				h1  {
+					font-size: 5.847em;
+				}
+			}
+			p  {
+				font-size: 1.2em;
+			}
+			.button  {
+				font-size: 1.387em;
+				padding: 1em 3.631em;
+			}
+		}
+		&#blog-posts  {
+			ul  {
+				li  {
+					width: 31.3%;
+					margin-right: 3%;
+					clear: none;
+					&:nth-child(2n) {
+						float: left;
+					}
+					&.first {
+						clear: both;
+					}
+					&.last {
+						margin-right:0;
+					}
+				}
+			}
+		}
+		&#promotion  {
+			.left-section  {
+				float: left;
+			}
+			.right-section  {
+				float: right;
+			}
+		}
+	}
+	.widget_woothemes_features  {
+		.feature  {
+		    width: 31.3%;
+		    margin-right: 3%;
+		    clear: none;
+		    &:nth-child(2n) {
+		    	float: left;
+		    }
+		    &.first {
+		    	clear: both;
+		    }
+		    &.last {
+		    	margin-right:0;
+		    }
+		}
+	}
+	.widget_woothemes_testimonials  {
+		.quote  {
+		    width: 31.3%;
+		    margin-right: 3%;
+		    clear: none;
+		    &:nth-child(2n) {
+		    	float: left;
+		    }
+		    &.first {
+		    	clear: both;
+		    }
+		    &.last {
+		    	margin-right:0;
+		    }
+		}
+	}
+	.page-template-template-contact-php {
+	    .location-twitter  {
+	    	.col-left  { 
+	    		float: left; 
+	    	}
+	    	#office-location { 
+	    	    width: 48%; 
+	    	    margin: 0;
+	    	}
+	    	.contact-social  {
+	    	    float: right; 
+	    	    width: 48%;
+	    	    #twitter  { 
+	    	    	margin: 0; 
+	    	    } 
+	    	}
+	    }
+	}
+	
+	/* Slider */
+	
+	.flexslider  {
+		.has-image  {
+			.slide-content { float: left; width: 45%; }
+			.slide-media { float: right; width: 45%; }
+		}
+		.has-slide-background  {
+			.slide-content {
+				position: absolute;
+				left: 1.618em;
+				bottom: 1.618em;
+				right: 1.618em;
+				h1, h2  {
+					color: #fff;
+				}
+			}
+		}
+	}
+	
+	#post-entries  {
+		.fl  {
+			float: left; margin: 0;
+		}
+		.fr  {
+			float: right;
+		}
+	}
+	
+	#comments  {
+		.gravatar {
+			margin: -2em -4em 1em 2em!important;
+		}
+	}
+	
+	/* 5. FOOTER WIDGETS */
+	#footer-widgets {
+	    .block { 
+	    	margin-right:3.8%; 
+	    	float: left; 
+	    }
+	    &.col-1 {
+	    	.block { 
+	    		width: 100%; 
+	    		float: none; 
+	    	}
+	    	.footer-widget-1 { 
+	    		margin-right:0; 
+	    	}
+	    }
+	    &.col-2 {
+	    	.block { 
+	    		width: 48%; 
+	    	}
+	    	.footer-widget-2 { 
+	    		margin-right:0; 
+	    	}
+	    }
+	    &.col-3 {
+	    	.block { 
+	    		width: 30.75%; 
+	    	}
+	    	.footer-widget-3 { 
+	    		margin-right:0; 
+	    	}
+	    }
+	    &.col-4 {
+	    	.block { 
+	    		width: 22.05% 
+	    	}
+	    	.footer-widget-4 { 
+	    		margin-right:0; 
+	    	}
+	    }
+	    
+	}
+	
+	/* 6. IE FIXES */
+	
+	.ie7 {
+	    #top-nav {
+	    	position: relative;
+	    	z-index: 9999999;
+	    }
+	    #header {
+	    	position: relative;
+	    	z-index: 9999999;
+	    }
+	}
+
+}
